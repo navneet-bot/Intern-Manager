@@ -1,0 +1,3092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Jockey — Intern Collaboration Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<style>
+  :root {
+    --bg: #080d1a;
+    --surface: #0f172a;
+    --surface2: #1a2540;
+    --border: rgba(255,255,255,0.07);
+    --accent: #f59e0b;
+    --accent2: #fbbf24;
+    --accent-dim: rgba(245,158,11,0.12);
+    --text: #e2e8f0;
+    --text-muted: #64748b;
+    --text-soft: #94a3b8;
+    --green: #10b981;
+    --red: #ef4444;
+    --blue: #3b82f6;
+    --purple: #8b5cf6;
+    --sidebar-w: 240px;
+    --radius: 14px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+  h1,h2,h3,h4{font-family:'Syne',sans-serif}
+  .hidden{display:none!important}
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:10px}
+
+  /* ── TOAST ── */
+  #toast-area{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:10px}
+  .toast{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent);padding:12px 18px;border-radius:10px;font-size:13.5px;color:var(--text);animation:slideIn .3s ease;max-width:300px}
+  .toast.success{border-left-color:var(--green)}.toast.error{border-left-color:var(--red)}.toast.info{border-left-color:var(--blue)}
+  @keyframes slideIn{from{transform:translateX(30px);opacity:0}to{transform:translateX(0);opacity:1}}
+  @keyframes fadeOut{to{opacity:0;transform:translateX(30px)}}
+
+  /* ══════════════════════════════════════
+     LOGIN PAGE
+  ══════════════════════════════════════ */
+  #loginPage{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);position:relative;overflow:hidden}
+  .login-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%, rgba(245,158,11,0.08) 0%, transparent 60%),radial-gradient(ellipse at 70% 20%, rgba(59,130,246,0.06) 0%, transparent 50%)}
+  .login-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px);background-size:60px 60px}
+  .login-card{position:relative;z-index:2;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:44px 40px;width:420px;box-shadow:0 40px 80px rgba(0,0,0,0.5)}
+  .login-logo{display:flex;align-items:center;gap:10px;margin-bottom:32px}
+  .login-logo-icon{width:42px;height:42px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;color:#000;font-size:18px}
+  .login-logo span{font-family:'Syne',sans-serif;font-weight:700;font-size:20px}
+  .login-logo span em{color:var(--accent);font-style:normal}
+  .login-card h2{font-size:26px;font-weight:700;margin-bottom:6px}
+  .login-card p{color:var(--text-muted);font-size:13.5px;margin-bottom:28px}
+  .field-group{margin-bottom:16px}
+  .field-group label{display:block;font-size:12px;font-weight:500;color:var(--text-soft);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px}
+  .field-group input,.field-group select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 15px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border .2s}
+  .field-group input:focus,.field-group select:focus{border-color:var(--accent)}
+  .field-group select option{background:var(--surface2)}
+  .role-tabs{display:flex;gap:8px;margin-bottom:20px}
+  .role-tab{flex:1;padding:10px;border:1px solid var(--border);border-radius:10px;background:transparent;color:var(--text-muted);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13.5px;font-weight:500;transition:all .2s;text-align:center}
+  .role-tab.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+  .btn-primary{width:100%;padding:13px;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;cursor:pointer;transition:all .2s;margin-top:4px}
+  .btn-primary:hover{background:var(--accent2);transform:translateY(-1px)}
+  .domain-note{font-size:12px;color:var(--text-muted);text-align:center;margin-top:14px}
+  .domain-note span{color:var(--accent)}
+
+  /* ══════════════════════════════════════
+     APP LAYOUT
+  ══════════════════════════════════════ */
+  #appLayout{display:flex;height:100vh;overflow:hidden}
+  .sidebar{width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+  .sidebar-header{padding:22px 20px 14px;border-bottom:1px solid var(--border)}
+  .sidebar-logo{display:flex;align-items:center;gap:10px}
+  .sidebar-logo-icon{width:34px;height:34px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;color:#000;font-size:14px;flex-shrink:0}
+  .sidebar-logo span{font-family:'Syne',sans-serif;font-weight:700;font-size:16px}
+  .sidebar-logo span em{color:var(--accent);font-style:normal}
+  .sidebar-user{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+  .user-avatar{width:32px;height:32px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:var(--accent);flex-shrink:0}
+  .sidebar-user-info{overflow:hidden}
+  .sidebar-user-info .uname{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sidebar-user-info .urole{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
+  .sidebar-nav{flex:1;padding:12px 10px}
+  .nav-section-label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;padding:8px 10px 4px;font-weight:600}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:all .18s;color:var(--text-soft);font-size:13.5px;font-weight:500;margin-bottom:2px;border:none;background:transparent;width:100%;text-align:left}
+  .nav-item:hover{background:var(--surface2);color:var(--text)}
+  .nav-item.active{background:var(--accent-dim);color:var(--accent)}
+  .nav-item svg{flex-shrink:0;opacity:.7}
+  .nav-item.active svg{opacity:1}
+  .nav-item.logout{color:var(--red);margin-top:auto}
+  .nav-item.logout:hover{background:rgba(239,68,68,0.1)}
+  .sidebar-bottom{padding:10px;border-top:1px solid var(--border)}
+  .main-content{flex:1;overflow-y:auto;background:var(--bg)}
+  .main-header{padding:22px 30px 0;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg);z-index:10;padding-bottom:10px;border-bottom:1px solid var(--border)}
+  .page-title h2{font-size:22px;font-weight:700;line-height:1}
+  .page-title p{font-size:13px;color:var(--text-muted);margin-top:4px}
+  .header-actions{display:flex;align-items:center;gap:10px}
+  .icon-btn{width:36px;height:36px;border:1px solid var(--border);border-radius:9px;background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-soft);transition:all .2s;position:relative}
+  .icon-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .notif-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;background:var(--accent);border-radius:50%;border:2px solid var(--bg)}
+  .page-body{padding:24px 30px 30px}
+  .section{display:none}
+  .section.active{display:block}
+
+  /* ── STAT CARDS ── */
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;position:relative;overflow:hidden;transition:transform .2s,border-color .2s}
+  .stat-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,0.12)}
+  .stat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:var(--radius) var(--radius) 0 0}
+  .stat-card.amber::after{background:var(--accent)}.stat-card.green::after{background:var(--green)}.stat-card.blue::after{background:var(--blue)}.stat-card.purple::after{background:var(--purple)}
+  .stat-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+  .stat-icon.amber{background:rgba(245,158,11,0.12);color:var(--accent)}.stat-icon.green{background:rgba(16,185,129,0.12);color:var(--green)}.stat-icon.blue{background:rgba(59,130,246,0.12);color:var(--blue)}.stat-icon.purple{background:rgba(139,92,246,0.12);color:var(--purple)}
+  .stat-value{font-family:'Syne',sans-serif;font-size:28px;font-weight:700;line-height:1}
+  .stat-label{font-size:12.5px;color:var(--text-muted);margin-top:4px}
+  .stat-badge{position:absolute;top:18px;right:18px;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600}
+  .stat-badge.up{background:rgba(16,185,129,0.12);color:var(--green)}.stat-badge.down{background:rgba(239,68,68,0.12);color:var(--red)}
+
+  /* ── CHARTS ── */
+  .charts-row{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:24px}
+  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px}
+  .chart-card h3{font-size:14px;font-weight:600;margin-bottom:18px;color:var(--text)}
+  .chart-wrap{position:relative;height:200px}
+
+  /* ── TABLES ── */
+  .table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px}
+  .table-card-header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--border)}
+  .table-card-header h3{font-size:15px;font-weight:600}
+  .btn-sm{padding:7px 14px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all .2s}
+  .btn-accent{background:var(--accent);color:#000}.btn-accent:hover{background:var(--accent2)}
+  .btn-outline{background:transparent;border:1px solid var(--border);color:var(--text-soft)}.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
+  table{width:100%;border-collapse:collapse}
+  thead tr{background:rgba(255,255,255,0.02)}
+  th{text-align:left;padding:11px 20px;font-size:11.5px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.6px}
+  td{padding:13px 20px;font-size:13.5px;border-top:1px solid var(--border)}
+  tr:hover td{background:rgba(255,255,255,0.02)}
+  .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600}
+  .badge::before{content:'';width:5px;height:5px;border-radius:50%;flex-shrink:0}
+  .badge-green{background:rgba(16,185,129,0.12);color:var(--green)}.badge-green::before{background:var(--green)}
+  .badge-red{background:rgba(239,68,68,0.12);color:var(--red)}.badge-red::before{background:var(--red)}
+  .badge-amber{background:rgba(245,158,11,0.12);color:var(--accent)}.badge-amber::before{background:var(--accent)}
+  .badge-blue{background:rgba(59,130,246,0.12);color:var(--blue)}.badge-blue::before{background:var(--blue)}
+  .badge-purple{background:rgba(139,92,246,0.12);color:var(--purple)}.badge-purple::before{background:var(--purple)}
+  .badge-gray{background:rgba(255,255,255,0.06);color:var(--text-soft)}.badge-gray::before{background:var(--text-soft)}
+  .action-btn{padding:5px 11px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all .2s}
+  .action-approve{background:rgba(16,185,129,0.12);color:var(--green)}.action-approve:hover{background:rgba(16,185,129,0.2)}
+  .action-reject{background:rgba(239,68,68,0.1);color:var(--red)}.action-reject:hover{background:rgba(239,68,68,0.2)}
+  .action-view{background:rgba(59,130,246,0.1);color:var(--blue)}.action-view:hover{background:rgba(59,130,246,0.2)}
+  .action-edit{background:rgba(245,158,11,0.1);color:var(--accent)}.action-edit:hover{background:rgba(245,158,11,0.2)}
+  .priority-high{color:var(--red);font-weight:600}.priority-medium{color:var(--accent);font-weight:600}.priority-low{color:var(--green);font-weight:600}
+
+  /* ── SEARCH & FILTER ── */
+  .table-tools{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.01)}
+  .search-input{flex:1;max-width:260px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:8px 13px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none}
+  .search-input:focus{border-color:var(--accent)}
+  .filter-select{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:8px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;cursor:pointer}
+  .filter-select:focus{border-color:var(--accent)}
+
+  /* ── PROGRESS BAR ── */
+  .progress-bar{height:6px;background:var(--surface2);border-radius:10px;overflow:hidden}
+  .progress-fill{height:100%;border-radius:10px;background:var(--accent);transition:width .4s}
+  .progress-fill.green{background:var(--green)}.progress-fill.blue{background:var(--blue)}.progress-fill.red{background:var(--red)}
+
+  /* ── AVATAR ── */
+  .avatar{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:'Syne',sans-serif;flex-shrink:0}
+  .avatar-group{display:flex;align-items:center}.avatar-group .avatar{border:2px solid var(--surface);margin-left:-8px}.avatar-group .avatar:first-child{margin-left:0}
+
+  /* ══════════════════════════════════════
+     CHAT MODULE
+  ══════════════════════════════════════ */
+  .chat-layout{display:grid;grid-template-columns:240px 1fr;height:calc(100vh - 120px);gap:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+  .chat-sidebar{border-right:1px solid var(--border);display:flex;flex-direction:column}
+  .chat-sidebar-header{padding:16px;border-bottom:1px solid var(--border);font-weight:600;font-size:14px}
+  .chat-search{padding:10px 14px;border-bottom:1px solid var(--border)}
+  .chat-search input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none}
+  .chat-list{flex:1;overflow-y:auto;padding:8px}
+  .chat-contact{display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:9px;cursor:pointer;transition:all .15s}
+  .chat-contact:hover,.chat-contact.active{background:var(--surface2)}
+  .chat-contact .cav{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;font-family:'Syne',sans-serif;flex-shrink:0;border:2px solid var(--border)}
+  .chat-contact .cinfo{flex:1;min-width:0}
+  .chat-contact .cname{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chat-contact .clast{font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chat-unread{background:var(--accent);color:#000;width:18px;height:18px;border-radius:50%;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .chat-area{display:flex;flex-direction:column}
+  .chat-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+  .chat-header .cav{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;font-family:'Syne',sans-serif;flex-shrink:0}
+  .chat-header-info .cn{font-weight:600;font-size:14px}
+  .chat-header-info .cs{font-size:12px;color:var(--green)}
+  .chat-messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px}
+  .msg{display:flex;gap:10px;max-width:70%}
+  .msg.me{align-self:flex-end;flex-direction:row-reverse}
+  .msg-avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:'Syne',sans-serif;flex-shrink:0;align-self:flex-end}
+  .msg-bubble{padding:10px 14px;border-radius:14px;font-size:13.5px;line-height:1.55;max-width:100%}
+  .msg .msg-bubble{background:var(--surface2);border:1px solid var(--border);border-bottom-left-radius:4px}
+  .msg.me .msg-bubble{background:var(--accent-dim);border:1px solid rgba(245,158,11,0.25);border-bottom-right-radius:4px;color:var(--text)}
+  .msg-time{font-size:10.5px;color:var(--text-muted);margin-top:4px;text-align:right}
+  .msg .msg-time{text-align:left}
+  .chat-input-area{padding:14px 20px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px}
+  .chat-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 15px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13.5px;outline:none;transition:border .2s}
+  .chat-input:focus{border-color:var(--accent)}
+  .send-btn{width:40px;height:40px;background:var(--accent);border:none;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#000;transition:all .2s;flex-shrink:0}
+  .send-btn:hover{background:var(--accent2)}
+
+  /* ══════════════════════════════════════
+     MODAL
+  ══════════════════════════════════════ */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:28px 30px;width:500px;max-width:95vw;max-height:90vh;overflow-y:auto}
+  .modal h3{font-size:18px;font-weight:700;margin-bottom:20px}
+  .modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:24px}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:12px;font-weight:500;color:var(--text-soft);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+  .field input,.field select,.field textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 13px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13.5px;outline:none;transition:border .2s}
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
+  .field textarea{resize:vertical;min-height:80px}
+  .field select option{background:var(--surface2)}
+
+  /* ══════════════════════════════════════
+     CALENDAR
+  ══════════════════════════════════════ */
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:16px}
+  .cal-day-header{text-align:center;font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;padding:8px 0}
+  .cal-day{background:var(--surface2);border:1px solid var(--border);border-radius:9px;min-height:80px;padding:8px;cursor:pointer;transition:border .2s}
+  .cal-day:hover{border-color:var(--accent)}
+  .cal-day.today{border-color:var(--accent);background:var(--accent-dim)}
+  .cal-day.empty{background:transparent;border-color:transparent}
+  .cal-date{font-size:12px;font-weight:600;margin-bottom:4px}
+  .cal-day.today .cal-date{color:var(--accent)}
+  .cal-event{font-size:10px;background:var(--blue);color:#fff;border-radius:4px;padding:2px 5px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cal-event.task{background:var(--accent);color:#000}
+  .cal-controls{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .cal-month{font-family:'Syne',sans-serif;font-size:18px;font-weight:700}
+  .cal-nav{display:flex;gap:8px}
+  .cal-nav button{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);width:32px;height:32px;cursor:pointer;font-size:14px;transition:all .2s}
+  .cal-nav button:hover{border-color:var(--accent)}
+
+  /* ── ATTENDANCE GRID ── */
+  .attend-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:20px}
+  .attend-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;align-items:center;gap:12px}
+  .attend-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;font-family:'Syne',sans-serif;flex-shrink:0}
+  .attend-info .an{font-size:13.5px;font-weight:600}
+  .attend-info .at{font-size:12px;color:var(--text-muted);margin-top:2px}
+
+  /* ── GROUPS ── */
+  .groups-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .group-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:all .2s}
+  .group-card:hover{border-color:rgba(255,255,255,0.12);transform:translateY(-2px)}
+  .group-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:14px}
+  .group-card h4{font-size:14.5px;font-weight:600;margin-bottom:6px}
+  .group-card p{font-size:12.5px;color:var(--text-muted);margin-bottom:14px}
+  .group-meta{display:flex;align-items:center;justify-content:space-between}
+
+  /* ── MEETINGS ── */
+  .meetings-list{display:flex;flex-direction:column;gap:14px}
+  .meet-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;display:flex;align-items:center;gap:18px}
+  .meet-time{text-align:center;flex-shrink:0;width:58px}
+  .meet-time .mdate{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--accent);line-height:1}
+  .meet-time .mmon{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
+  .meet-divider{width:1px;height:50px;background:var(--border);flex-shrink:0}
+  .meet-info{flex:1}
+  .meet-info h4{font-size:15px;font-weight:600;margin-bottom:5px}
+  .meet-info p{font-size:12.5px;color:var(--text-muted)}
+  .meet-link{padding:8px 16px;border-radius:8px;background:rgba(59,130,246,0.12);color:var(--blue);font-size:12.5px;font-weight:600;border:1px solid rgba(59,130,246,0.2);cursor:pointer;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+  .meet-link:hover{background:rgba(59,130,246,0.2)}
+
+  /* ── PRODUCTIVITY ── */
+  .prod-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:20px}
+  .prod-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
+  .prod-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+  .prod-row:last-child{border-bottom:none}
+  .prod-name{font-size:13.5px;font-weight:500}
+  .prod-score{font-family:'Syne',sans-serif;font-size:18px;font-weight:700}
+
+  /* ── INTERN MY TASKS ── */
+  .task-kanban{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .kanban-col{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+  .kanban-header{padding:14px 16px;border-bottom:1px solid var(--border);font-weight:600;font-size:13.5px;display:flex;align-items:center;justify-content:space-between}
+  .kanban-count{background:var(--surface2);border-radius:20px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+  .kanban-body{padding:10px;display:flex;flex-direction:column;gap:10px}
+  .task-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:all .15s}
+  .task-card:hover{border-color:rgba(255,255,255,0.12)}
+  .task-card h5{font-size:13.5px;font-weight:600;margin-bottom:6px}
+  .task-card p{font-size:12px;color:var(--text-muted);margin-bottom:10px;line-height:1.5}
+  .task-card-meta{display:flex;align-items:center;justify-content:space-between}
+  .task-due{font-size:11px;color:var(--text-muted)}
+
+  /* ── NOTIFICATION PANEL ── */
+  .notif-list{display:flex;flex-direction:column;gap:12px}
+  .notif-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:flex-start;gap:12px;transition:all .2s}
+  .notif-item:hover{border-color:rgba(255,255,255,0.1)}
+  .notif-item.unread{border-left:2px solid var(--accent)}
+  .notif-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px}
+  .notif-body h5{font-size:13.5px;font-weight:600;margin-bottom:3px}
+  .notif-body p{font-size:12.5px;color:var(--text-muted)}
+  .notif-time{font-size:11px;color:var(--text-muted);margin-top:4px}
+
+  /* ── REPORT SUBMIT ── */
+  .report-form{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;max-width:600px}
+  .upload-zone{border:2px dashed var(--border);border-radius:10px;padding:30px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:14px}
+  .upload-zone:hover{border-color:var(--accent)}
+  .upload-zone p{font-size:13px;color:var(--text-muted);margin-top:8px}
+
+  /* ── RESPONSIVE ── */
+  @media(max-width:900px){
+    .stats-grid{grid-template-columns:1fr 1fr}
+    .charts-row{grid-template-columns:1fr}
+    .groups-grid{grid-template-columns:1fr 1fr}
+    .task-kanban{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<div id="toast-area"></div>
+
+<!-- Loading screen shown while checking session -->
+<div id="loadingScreen" style="position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999">
+  <div style="font-size:32px;font-weight:800;letter-spacing:-1px;color:var(--text);margin-bottom:12px">Job <em style="color:var(--accent);font-style:normal">Jockey</em></div>
+  <div style="width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite"></div>
+  <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+</div>
+
+<!-- ════════════════════════════════════
+     LOGIN PAGE
+════════════════════════════════════ -->
+<div id="loginPage" class="hidden">
+  <div class="login-bg"></div>
+  <div class="login-grid"></div>
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">JJ</div>
+      <span>Job <em>Jockey</em></span>
+    </div>
+    <h2>Welcome back</h2>
+    <p>Sign in to your intern workspace</p>
+
+    <div class="role-tabs">
+      <div class="role-tab active" id="tabAdmin" onclick="selectRole('admin')">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:inline;margin-right:5px"><path d="M12 2l3 7h7l-5.5 4 2 7L12 17l-6.5 3 2-7L2 9h7z"/></svg>
+        Admin
+      </div>
+      <div class="role-tab" id="tabIntern" onclick="selectRole('intern')">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:inline;margin-right:5px"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Intern
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label>Full Name</label>
+      <input type="text" id="loginName" placeholder="e.g. Arjun Sharma">
+    </div>
+    <div class="field-group">
+      <label>Email Address</label>
+      <input type="email" id="loginEmail" placeholder="yourname@jobjockey.in">
+    </div>
+    <div class="field-group">
+      <label>Password</label>
+      <input type="password" id="loginPassword" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn-primary" onclick="doLogin()">Sign In →</button>
+    <p class="domain-note">Only <span>@jobjockey.in</span> emails are allowed</p>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     APP LAYOUT
+════════════════════════════════════ -->
+<div id="appLayout" class="hidden">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-icon">JJ</div>
+        <span>Job <em>Jockey</em></span>
+      </div>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-avatar" id="sidebarAvatar">JJ</div>
+      <div class="sidebar-user-info">
+        <div class="uname" id="sidebarName">Admin</div>
+        <div class="urole" id="sidebarRole">Administrator</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav" id="sidebarNav"></nav>
+    <div class="sidebar-bottom">
+      <button class="nav-item logout" onclick="doLogout()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sign Out
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main-content">
+    <div class="main-header">
+      <div class="page-title">
+        <h2 id="pageTitle">Dashboard</h2>
+        <p id="pageSubtitle">Welcome back 👋</p>
+      </div>
+      <div class="header-actions">
+        <div class="icon-btn" onclick="navTo('notifications')" title="Notifications">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+          <div class="notif-dot"></div>
+        </div>
+        <div class="icon-btn" title="Settings">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        </div>
+      </div>
+    </div>
+    <div class="page-body" id="mainContent"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     MODALS
+════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="taskModal" onclick="if(event.target===this)closeModal('taskModal')">
+  <div class="modal">
+    <h3>Create New Task</h3>
+    <div class="field"><label>Task Title</label><input id="tTitle" placeholder="e.g. Build Login Page"></div>
+    <div class="form-row">
+      <div class="field"><label>Assign To</label>
+        <select id="tAssign">
+          <option>Rahul Sharma</option><option>Priya Nair</option><option>Arjun Das</option><option>Sneha Patel</option>
+        </select>
+      </div>
+      <div class="field"><label>Priority</label>
+        <select id="tPriority"><option>High</option><option selected>Medium</option><option>Low</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>Deadline</label><input type="date" id="tDeadline"></div>
+      <div class="field"><label>Project</label>
+        <select id="tProject"><option>Website Revamp</option><option>Mobile App</option><option>Marketing Campaign</option><option>Data Pipeline</option></select>
+      </div>
+    </div>
+    <div class="field"><label>Description</label><textarea id="tDesc" placeholder="Task details..."></textarea></div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-outline" onclick="closeModal('taskModal')">Cancel</button>
+      <button class="btn-sm btn-accent" onclick="createTask()">Create Task</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+const API_URL = "http://127.0.0.1:8000";
+let token="", currentRole="", currentUser="", currentSection="";
+let currentUserId=null, selectedReceiverId=null, ws=null;
+let allUsers=[], chatCharts={}, calDate=new Date();
+
+const COLORS=["#f59e0b","#3b82f6","#10b981","#8b5cf6","#ef4444","#06b6d4"];
+
+// ─── ROLE CHECKS ─────────────────────────────
+function isAdmin(){ return currentRole==="admin"; }
+function isSuperAdmin(){ return currentRole==="super_admin"; }
+function isIntern(){ return currentRole==="intern"; }
+function canManage(){ return isAdmin()||isSuperAdmin(); }
+
+// ─── API HELPER ──────────────────────────────
+async function api(path, method="GET", body=null){
+  const opts={method,headers:{"Authorization":"Bearer "+token}};
+  if(body){opts.headers["Content-Type"]="application/json";opts.body=JSON.stringify(body);}
+  const res=await fetch(API_URL+path,opts);
+  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.detail||"Request failed");}
+  return res.json();
+}
+
+// ─── HELPERS ────────────────────────────────
+function showToast(msg,type=""){
+  const area=document.getElementById("toast-area");
+  const t=document.createElement("div");t.className="toast "+type;t.textContent=msg;
+  area.appendChild(t);
+  setTimeout(()=>{t.style.animation="fadeOut .3s ease forwards";setTimeout(()=>t.remove(),300)},3500);
+}
+function openModal(id){document.getElementById(id).classList.remove("hidden");}
+function closeModal(id){document.getElementById(id).classList.add("hidden");}
+function statusBadge(s){
+  const m={Pending:"badge-amber","In Progress":"badge-blue",Completed:"badge-green",Approved:"badge-green",Rejected:"badge-red",Present:"badge-green",Absent:"badge-red",Leave:"badge-purple"};
+  return `<span class="badge ${m[s]||"badge-gray"}">${s}</span>`;
+}
+function prioritySpan(p){
+  const m={High:"priority-high",Medium:"priority-medium",Low:"priority-low"};
+  return `<span class="${m[p]||""}">${p}</span>`;
+}
+function roleLabel(r){return {admin:"👑 Admin (Boss)",super_admin:"⭐ Super Admin",intern:"🎓 Intern"}[r]||r;}
+function roleBadge(r){
+  const cls={admin:"badge-red",super_admin:"badge-purple",intern:"badge-blue"}[r]||"badge-gray";
+  return `<span class="badge ${cls}">${roleLabel(r)}</span>`;
+}
+function initChart(id,type,labels,datasets,options={}){
+  const ctx=document.getElementById(id);if(!ctx)return null;
+  return new Chart(ctx,{type,data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#94a3b8",font:{family:"DM Sans",size:12}}}},scales:type!=="doughnut"&&type!=="pie"?{x:{ticks:{color:"#64748b"},grid:{color:"rgba(255,255,255,0.04)"}},y:{ticks:{color:"#64748b"},grid:{color:"rgba(255,255,255,0.04)"}}}:{},...options}});
+}
+function filterTable(tbId,q){document.querySelectorAll("#"+tbId+" tr").forEach(r=>r.style.display=r.textContent.toLowerCase().includes(q.toLowerCase())?"":"none");}
+function filterCol(tbId,col,val){document.querySelectorAll("#"+tbId+" tr").forEach(r=>{if(!val){r.style.display="";return;}const c=r.querySelectorAll("td");r.style.display=(c[col]&&c[col].textContent.includes(val))?"":"none";});}
+
+// ─── NAV CONFIG ──────────────────────────────
+const svgDash=`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>`;
+const svgUsers=`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>`;
+const svgCand=`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+const svgTask=`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>`;
+const svgProj=`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`;
+const svgAtt=`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+const svgRep=`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+const svgProd=`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`;
+const svgChat=`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>`;
+const svgGrp=`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>`;
+const svgMeet=`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>`;
+const svgCal=`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+const svgNotif=`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>`;
+
+const ADMIN_NAV=[
+  {section:"Main",items:[{id:"dashboard",label:"Dashboard",icon:svgDash}]},
+  {section:"Manage",items:[
+    {id:"users",label:"Users & Roles",icon:svgUsers},
+    {id:"candidates",label:"Candidates",icon:svgCand},
+    {id:"tasks",label:"Tasks",icon:svgTask},
+    {id:"projects",label:"Projects",icon:svgProj},
+    {id:"attendance",label:"Attendance",icon:svgAtt},
+    {id:"reports",label:"Reports",icon:svgRep},
+    {id:"productivity",label:"Productivity",icon:svgProd},
+  ]},
+  {section:"Collaborate",items:[
+    {id:"chat",label:"Chat",icon:svgChat},
+    {id:"groups",label:"Groups",icon:svgGrp},
+    {id:"meetings",label:"Meetings",icon:svgMeet},
+    {id:"calendar",label:"Calendar",icon:svgCal},
+    {id:"notifications",label:"Notifications",icon:svgNotif},
+  ]},
+  {section:"System",items:[
+    {id:"changepassword",label:"Change Password",icon:`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>`},
+    {id:"settings",label:"Email Settings",icon:`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>`},
+  ]},
+];
+const SUPERADMIN_NAV=[
+  {section:"Main",items:[{id:"dashboard",label:"Dashboard",icon:svgDash}]},
+  {section:"System",items:[{id:"changepassword",label:"Change Password",icon:`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>`}]},
+  {section:"Manage",items:[
+    {id:"tasks",label:"Tasks",icon:svgTask},
+    {id:"projects",label:"Projects",icon:svgProj},
+    {id:"candidates",label:"Candidates",icon:svgCand},
+    {id:"attendance",label:"Attendance",icon:svgAtt},
+    {id:"reports",label:"Reports",icon:svgRep},
+  ]},
+  {section:"Collaborate",items:[
+    {id:"chat",label:"Chat",icon:svgChat},
+    {id:"groups",label:"Groups",icon:svgGrp},
+    {id:"meetings",label:"Meetings",icon:svgMeet},
+    {id:"calendar",label:"Calendar",icon:svgCal},
+    {id:"notifications",label:"Notifications",icon:svgNotif},
+  ]},
+];
+const INTERN_NAV=[
+  {section:"Main",items:[
+    {id:"dashboard",label:"Dashboard",icon:svgDash},
+    {id:"mytasks",label:"My Tasks",icon:svgTask},
+    {id:"attendance",label:"Attendance",icon:svgAtt},
+    {id:"reports",label:"Reports",icon:svgRep},
+  ]},
+  {section:"Collaborate",items:[
+    {id:"chat",label:"Chat",icon:svgChat},
+    {id:"groups",label:"Groups",icon:svgGrp},
+    {id:"meetings",label:"Meetings",icon:svgMeet},
+    {id:"calendar",label:"Calendar",icon:svgCal},
+    {id:"notifications",label:"Notifications",icon:svgNotif},
+  ]},
+];
+
+// ─── AUTH ────────────────────────────────────
+function selectRole(r){
+  currentRole=r;
+  document.getElementById("tabAdmin").classList.toggle("active",r==="admin");
+  document.getElementById("tabIntern").classList.toggle("active",r==="intern");
+}
+
+async function doLogin(){
+  const name=document.getElementById("loginName").value.trim();
+  const email=document.getElementById("loginEmail").value.trim();
+  const password=document.getElementById("loginPassword").value.trim();
+  if(!name){showToast("Please enter your name","error");return;}
+  if(!email){showToast("Please enter your email","error");return;}
+  if(!password){showToast("Please enter your password","error");return;}
+  try{
+    const data=await api("/login","POST",{email,password});
+    token=data.access_token; currentRole=data.role; currentUser=data.name||name; currentUserId=data.user_id;
+    // Save session to localStorage so refresh doesn't log out
+    localStorage.setItem("jj_token", token);
+    localStorage.setItem("jj_role", currentRole);
+    localStorage.setItem("jj_user", currentUser);
+    localStorage.setItem("jj_uid", currentUserId);
+    localStorage.setItem("jj_email", email);
+    document.getElementById("loginPage").classList.add("hidden");
+    document.getElementById("appLayout").classList.remove("hidden");
+    await loadAllUsers();
+    initApp();
+    connectWS(data.user_id);
+    showToast("Welcome back, "+currentUser+" 👋","success");
+  }catch(e){ showToast("Login failed: "+e.message,"error"); }
+}
+
+
+function goAssignTask(email, name){
+  navTo("tasks");
+  setTimeout(()=>{
+    openModal("taskModal");
+    const sel = document.getElementById("tAssign");
+    if(sel){
+      for(let i=0;i<sel.options.length;i++){
+        if(sel.options[i].value===email){ sel.selectedIndex=i; break; }
+      }
+    }
+    const title = document.getElementById("tTitle");
+    if(title) title.placeholder = "Task for "+name+"...";
+    showToast("Assign a task to "+name,"info");
+  }, 300);
+}
+
+function doLogout(){
+  token=""; currentRole=""; currentUser=""; currentUserId=null;
+  localStorage.removeItem("jj_token");
+  localStorage.removeItem("jj_role");
+  localStorage.removeItem("jj_user");
+  localStorage.removeItem("jj_uid");
+  localStorage.removeItem("jj_email");
+  if(ws){try{ws.close();}catch(e){}ws=null;}
+  Object.values(chatCharts).forEach(c=>c&&c.destroy&&c.destroy()); chatCharts={};
+  document.getElementById("appLayout").classList.add("hidden");
+  document.getElementById("loginPage").classList.remove("hidden");
+  document.getElementById("loginName").value="";
+  document.getElementById("loginEmail").value="";
+  document.getElementById("loginPassword").value="";
+  showToast("Signed out","info");
+}
+
+// ─── INIT ────────────────────────────────────
+async function loadAllUsers(){
+  try{allUsers=await api("/users");}catch(e){allUsers=[];}
+}
+function populateAssignDropdown(){
+  const sel=document.getElementById("tAssign"); if(!sel)return;
+  const assignable=isAdmin()?allUsers.filter(u=>u.role!=="admin"):allUsers.filter(u=>u.role==="intern");
+  sel.innerHTML=assignable.map(u=>`<option value="${u.email}">${u.name} (${u.role})</option>`).join("");
+}
+
+function initApp(){
+  const nav=isAdmin()?ADMIN_NAV:isSuperAdmin()?SUPERADMIN_NAV:INTERN_NAV;
+  const initials=currentUser.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2);
+  document.getElementById("sidebarAvatar").textContent=initials;
+  document.getElementById("sidebarName").textContent=currentUser;
+  document.getElementById("sidebarRole").textContent=roleLabel(currentRole);
+  const sidebarNav=document.getElementById("sidebarNav"); sidebarNav.innerHTML="";
+  nav.forEach(sec=>{
+    sidebarNav.innerHTML+=`<div class="nav-section-label">${sec.section}</div>`;
+    sec.items.forEach(item=>sidebarNav.innerHTML+=`<button class="nav-item" id="nav_${item.id}" onclick="navTo('${item.id}')">${item.icon}<span>${item.label}</span></button>`);
+  });
+  navTo("dashboard");
+  populateAssignDropdown();
+}
+
+function navTo(id){
+  currentSection=id;
+  document.querySelectorAll(".nav-item").forEach(el=>el.classList.toggle("active",el.id==="nav_"+id));
+  const titles={dashboard:"Dashboard",users:"Users & Roles",candidates:"Candidates",tasks:"Tasks",projects:"Projects",attendance:"Attendance",reports:"Reports",productivity:"Productivity",chat:"Chat",groups:"Groups",meetings:"Meetings",calendar:"Calendar",notifications:"Notifications",mytasks:"My Tasks",settings:"Email Settings",changepassword:"Change Password"};
+  const subs={dashboard:"Overview of all activities",users:"Manage roles and permissions",candidates:"Manage applicants",tasks:"Assign and track tasks",projects:"Project progress",attendance:"Daily attendance",reports:"Work reports",productivity:"Performance metrics",chat:"Team messages",groups:"Project teams",meetings:"Scheduled meetings",calendar:"Events and schedule",notifications:"Alerts and updates",mytasks:"Your assigned tasks",settings:"Configure Gmail to send emails to candidates",changepassword:"Update your login password"};
+  document.getElementById("pageTitle").textContent=titles[id]||id;
+  document.getElementById("pageSubtitle").textContent=subs[id]||"";
+  Object.values(chatCharts).forEach(c=>c&&c.destroy&&c.destroy()); chatCharts={};
+  // Clean up dynamic modals when navigating away
+  if(id!=="projects"){const m=document.getElementById("projectModal");if(m)m.remove();}
+  const renders={dashboard:renderDashboard,users:renderUsers,candidates:renderCandidates,tasks:renderTasks,projects:renderProjects,attendance:renderAttendance,reports:renderReports,productivity:renderProductivity,chat:renderChat,groups:renderGroups,meetings:renderMeetings,calendar:renderCalendar,notifications:renderNotifications,mytasks:renderMyTasks,settings:renderSettings,changepassword:renderChangePassword};
+  if(renders[id])renders[id]();
+}
+
+// ════════════════════════════════════════════
+// DASHBOARD
+// ════════════════════════════════════════════
+async function renderDashboard(){
+  let stats={total_interns:0,tasks_completed:0,total_projects:0,present_today:0,tasks_pending:0,tasks_in_progress:0};
+  let recentTasks=[];
+  try{stats=await api("/stats");}catch(e){}
+  try{recentTasks=await api("/tasks");}catch(e){}
+  document.getElementById("mainContent").innerHTML=`
+  <div class="stats-grid">
+    <div class="stat-card amber"><div class="stat-icon amber">${svgUsers}</div><div class="stat-value">${stats.total_interns}</div><div class="stat-label">Active Interns</div></div>
+    <div class="stat-card green"><div class="stat-icon green">${svgTask}</div><div class="stat-value">${stats.tasks_completed}</div><div class="stat-label">Tasks Completed</div></div>
+    <div class="stat-card blue"><div class="stat-icon blue">${svgProj}</div><div class="stat-value">${stats.total_projects}</div><div class="stat-label">Active Projects</div></div>
+    <div class="stat-card purple"><div class="stat-icon purple">${svgAtt}</div><div class="stat-value">${stats.present_today}</div><div class="stat-label">Present Today</div></div>
+  </div>
+  <div class="charts-row">
+    <div class="chart-card"><h3>Task Status Overview</h3><div class="chart-wrap"><canvas id="trendChart"></canvas></div></div>
+    <div class="chart-card"><h3>Task Distribution</h3><div class="chart-wrap"><canvas id="statusChart"></canvas></div></div>
+  </div>
+  <div class="table-card">
+    <div class="table-card-header"><h3>Recent Tasks</h3>${canManage()?`<button class="btn-sm btn-accent" onclick="openModal('taskModal')">+ New Task</button>`:""}</div>
+    <table><thead><tr><th>Task</th><th>Assigned To</th><th>Priority</th><th>Status</th><th>Deadline</th></tr></thead>
+    <tbody>${recentTasks.slice(0,5).map(t=>`<tr><td><strong>${t.title}</strong><br><span style="font-size:11.5px;color:var(--text-muted)">${t.project||""}</span></td><td>${t.assigned_to||"—"}</td><td>${prioritySpan(t.priority)}</td><td>${statusBadge(t.status)}</td><td>${t.deadline||"TBD"}</td></tr>`).join("")||`<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted)">No tasks yet</td></tr>`}</tbody>
+    </table>
+  </div>`;
+  setTimeout(()=>{
+    chatCharts.trend=initChart("trendChart","bar",["Pending","In Progress","Completed"],[{label:"Tasks",data:[stats.tasks_pending||0,stats.tasks_in_progress||0,stats.tasks_completed||0],backgroundColor:["rgba(245,158,11,0.7)","rgba(59,130,246,0.7)","rgba(16,185,129,0.7)"],borderRadius:6}]);
+    chatCharts.status=initChart("statusChart","doughnut",["Completed","In Progress","Pending"],[{data:[stats.tasks_completed||0,stats.tasks_in_progress||0,stats.tasks_pending||0],backgroundColor:["#10b981","#3b82f6","#f59e0b"],borderWidth:0,hoverOffset:6}]);
+  },50);
+}
+
+// ════════════════════════════════════════════
+// USERS & ROLES (Admin boss only)
+// ════════════════════════════════════════════
+async function renderUsers(){
+  let users=[];
+  try{users=await api("/users");}catch(e){showToast("Failed to load users","error");return;}
+  document.getElementById("mainContent").innerHTML=`
+  <div class="table-card">
+    <div class="table-card-header"><h3>All Users & Roles</h3><span style="font-size:12px;color:var(--text-muted)">${users.length} total</span></div>
+    <table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Permissions</th><th>Actions</th></tr></thead>
+    <tbody>
+    ${users.map(u=>`<tr>
+      <td><strong>${u.name}</strong></td>
+      <td style="color:var(--text-muted);font-size:12px">${u.email}</td>
+      <td>${roleBadge(u.role)}</td>
+      <td style="font-size:11.5px;color:var(--text-muted);max-width:200px">
+        ${u.role==="super_admin"?`
+          <div style="display:flex;flex-wrap:wrap;gap:3px">
+            ${(u.permissions||"").split(",").filter(p=>p).map(p=>`<span style="padding:1px 6px;background:rgba(139,92,246,0.12);border:1px solid rgba(139,92,246,0.25);border-radius:10px;font-size:10.5px;color:var(--purple)">${p.trim()}</span>`).join("")||"<span style='color:var(--text-muted)'>No permissions</span>"}
+          </div>`:u.permissions||"—"}
+      </td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap">
+        ${u.role!=="admin"?`
+          ${u.role==="intern"?`<button class="action-btn action-approve" onclick="promoteUser(${u.id},'${u.name}')">⭐ Super Admin</button>`:""}
+          ${u.role==="super_admin"?`
+            <button class="action-btn action-edit" onclick="openPermissionsModal(${u.id},'${u.name}','${u.permissions||''}')">🔧 Permissions</button>
+            <button class="action-btn action-edit" onclick="demoteUser(${u.id},'${u.name}')">↓ Intern</button>
+          `:""}
+          <button class="action-btn action-reject" onclick="deleteUser(${u.id},'${u.name}')">🗑</button>
+        `:"<span style='color:var(--text-muted);font-size:12px'>Boss</span>"}
+      </td>
+    </tr>`).join("")}
+    </tbody></table>
+  </div>
+  <div class="table-card" style="margin-top:16px">
+    <div class="table-card-header"><h3>Role Hierarchy & Permissions</h3></div>
+    <div style="padding:20px;display:flex;gap:16px;flex-wrap:wrap">
+      <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:12px;padding:18px;flex:1;min-width:200px">
+        <div style="font-size:24px;margin-bottom:8px">👑</div>
+        <div style="font-weight:700;font-size:14px;color:var(--red)">Admin — Boss</div>
+        <ul style="font-size:12px;color:var(--text-muted);margin-top:10px;padding-left:16px;line-height:2.2">
+          <li>Full platform control</li><li>Promote → Super Admin</li><li>Set custom permissions</li><li>Demote / Delete users</li><li>All modules</li>
+        </ul>
+      </div>
+      <div style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.25);border-radius:12px;padding:18px;flex:1;min-width:200px">
+        <div style="font-size:24px;margin-bottom:8px">⭐</div>
+        <div style="font-weight:700;font-size:14px;color:var(--purple)">Super Admin</div>
+        <ul style="font-size:12px;color:var(--text-muted);margin-top:10px;padding-left:16px;line-height:2.2">
+          <li>Permissions set by Admin</li><li>Click 🔧 to customize</li><li>Can vary per user</li>
+        </ul>
+      </div>
+      <div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.25);border-radius:12px;padding:18px;flex:1;min-width:200px">
+        <div style="font-size:24px;margin-bottom:8px">🎓</div>
+        <div style="font-weight:700;font-size:14px;color:var(--blue)">Intern</div>
+        <ul style="font-size:12px;color:var(--text-muted);margin-top:10px;padding-left:16px;line-height:2.2">
+          <li>View own tasks</li><li>Mark own attendance</li><li>Submit reports</li><li>Chat with team</li>
+        </ul>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── PERMISSIONS MODAL ─────────────────────────
+const ALL_PERMISSIONS = [
+  { key:"create_task",        label:"Create Tasks",           desc:"Can create and assign tasks to interns",   icon:"📋" },
+  { key:"delete_task",        label:"Delete Tasks",           desc:"Can remove any task from the system",      icon:"🗑" },
+  { key:"manage_attendance",  label:"Manage Attendance",      desc:"Can mark attendance for all members",      icon:"📅" },
+  { key:"view_reports",       label:"View & Review Reports",  desc:"Can see and review all intern reports",    icon:"📄" },
+  { key:"manage_groups",      label:"Manage Groups",          desc:"Can create and manage groups",             icon:"👥" },
+  { key:"manage_meetings",    label:"Schedule Meetings",      desc:"Can schedule and manage meetings",         icon:"📅" },
+  { key:"manage_candidates",  label:"View Candidates",        desc:"Can view and manage candidates",           icon:"🎯" },
+  { key:"send_notifications", label:"Send Notifications",     desc:"Can send notifications to team",           icon:"🔔" },
+  { key:"view_productivity",  label:"View Productivity",      desc:"Can view productivity reports",            icon:"📊" },
+  { key:"manage_projects",    label:"Manage Projects",        desc:"Can create and update projects",           icon:"🚀" },
+];
+
+function openPermissionsModal(uid, name, currentPerms){
+  const ex=document.getElementById("permModal");if(ex)ex.remove();
+  const current=currentPerms.split(",").map(p=>p.trim()).filter(Boolean);
+
+  const modal=document.createElement("div");
+  modal.id="permModal";
+  modal.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:1000;padding:16px";
+  modal.innerHTML=`
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:520px;box-shadow:0 24px 64px rgba(0,0,0,0.5);max-height:90vh;display:flex;flex-direction:column">
+
+    <!-- Header -->
+    <div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <div>
+        <h3 style="margin:0;font-size:16px;font-weight:700">🔧 Set Permissions</h3>
+        <p style="margin:4px 0 0;font-size:12.5px;color:var(--text-muted)">⭐ ${name} — Super Admin</p>
+      </div>
+      <button onclick="document.getElementById('permModal').remove()" style="background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer">✕</button>
+    </div>
+
+    <!-- Quick select -->
+    <div style="padding:12px 24px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-shrink:0">
+      <button class="action-btn action-approve" onclick="permSelectAll(true)">✓ Select All</button>
+      <button class="action-btn action-reject" onclick="permSelectAll(false)">✕ Clear All</button>
+      <span id="permCount" style="font-size:12px;color:var(--accent);padding:4px 0">${current.length} selected</span>
+    </div>
+
+    <!-- Permissions list -->
+    <div style="overflow-y:auto;flex:1;padding:16px 24px;display:flex;flex-direction:column;gap:10px">
+      ${ALL_PERMISSIONS.map(p=>`
+      <label style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border:1px solid ${current.includes(p.key)?"var(--accent)":"var(--border)"};border-radius:10px;cursor:pointer;transition:all .2s;background:${current.includes(p.key)?"rgba(245,158,11,0.06)":"transparent"}"
+        onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor=this.querySelector('input').checked?'var(--accent)':'var(--border)'">
+        <input type="checkbox" id="perm_${p.key}" value="${p.key}" ${current.includes(p.key)?"checked":""}
+          onchange="updatePermCount();this.closest('label').style.borderColor=this.checked?'var(--accent)':'var(--border)';this.closest('label').style.background=this.checked?'rgba(245,158,11,0.06)':'transparent'"
+          style="accent-color:var(--accent);width:18px;height:18px;flex-shrink:0;margin-top:1px">
+        <div>
+          <div style="font-size:13px;font-weight:600">${p.icon} ${p.label}</div>
+          <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px">${p.desc}</div>
+        </div>
+      </label>`).join("")}
+    </div>
+
+    <!-- Footer -->
+    <div style="padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0">
+      <button class="btn-sm btn-outline" onclick="document.getElementById('permModal').remove()">Cancel</button>
+      <button class="btn-sm btn-accent" onclick="savePermissions(${uid},'${name}')">✓ Save Permissions</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+}
+
+function updatePermCount(){
+  const count=document.querySelectorAll("#permModal input[type=checkbox]:checked").length;
+  const el=document.getElementById("permCount");
+  if(el) el.textContent=count+" selected";
+}
+
+function permSelectAll(checked){
+  document.querySelectorAll("#permModal input[type=checkbox]").forEach(cb=>{
+    cb.checked=checked;
+    const label=cb.closest("label");
+    if(label){
+      label.style.borderColor=checked?"var(--accent)":"var(--border)";
+      label.style.background=checked?"rgba(245,158,11,0.06)":"transparent";
+    }
+  });
+  updatePermCount();
+}
+
+async function savePermissions(uid, name){
+  const checked=Array.from(document.querySelectorAll("#permModal input[type=checkbox]:checked")).map(cb=>cb.value);
+  const perms=checked.join(",");
+  try{
+    await api("/users/"+uid+"/permissions","PATCH",{permissions:perms});
+    showToast("Permissions saved for "+name+"!","success");
+    document.getElementById("permModal").remove();
+    await loadAllUsers();
+    renderUsers();
+  }catch(e){showToast("Failed: "+e.message,"error");}
+}
+
+async function promoteUser(id,name){
+  if(!confirm("Promote "+name+" to Super Admin?"))return;
+  try{
+    await api("/users/"+id+"/promote","PATCH");
+    showToast(name+" is now Super Admin ⭐","success");
+    await loadAllUsers();
+    renderUsers();
+    // Auto open permissions modal
+    setTimeout(()=>{
+      const users_list=document.querySelectorAll("tbody tr");
+      showToast("Set permissions for "+name+" using the 🔧 button","info");
+    },500);
+  }
+  catch(e){showToast("Failed: "+e.message,"error");}
+}
+async function demoteUser(id,name){
+  if(!confirm("Demote "+name+" back to Intern?"))return;
+  try{await api("/users/"+id+"/demote","PATCH");showToast(name+" demoted to Intern","info");await loadAllUsers();renderUsers();}
+  catch(e){showToast("Failed: "+e.message,"error");}
+}
+async function deleteUser(id,name){
+  if(!confirm("Delete user "+name+"? This cannot be undone."))return;
+  try{await api("/users/"+id,"DELETE");showToast(name+" deleted","error");await loadAllUsers();renderUsers();}
+  catch(e){showToast("Failed: "+e.message,"error");}
+}
+
+// ════════════════════════════════════════════
+// CANDIDATES
+// ════════════════════════════════════════════
+async function renderCandidates(){
+  let data=[];
+  try{data=await api("/candidates");}catch(e){showToast("Failed","error");return;}
+
+  // Super admin only sees approved candidates
+  if(isSuperAdmin()) data=data.filter(c=>c.status==="Approved");
+
+  const savedSheetUrl=localStorage.getItem("gsheet_url")||"";
+
+  // Super admin gets simplified view — only approved interns
+  if(isSuperAdmin()){
+    document.getElementById("mainContent").innerHTML=`
+    <div class="table-card">
+      <div class="table-card-header">
+        <h3>✅ Selected Interns <span style="font-size:12px;color:var(--text-muted);font-weight:400">(${data.length} approved)</span></h3>
+        <button class="btn-sm btn-outline" onclick="exportCandidates()">↓ Export CSV</button>
+      </div>
+      <div class="table-tools">
+        <input class="search-input" placeholder="🔍 Search..." oninput="filterTable('candidateBody',this.value)">
+      </div>
+      <table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Skills</th><th>Domain</th><th>Duration</th><th>Resume</th><th>Status</th><th>Platform Login</th></tr></thead>
+      <tbody id="candidateBody">
+      ${data.map(c=>{
+        let jjEmail="";
+        if(c.resume&&c.resume.startsWith("LOGIN:")){
+          jjEmail=c.resume.replace("LOGIN:","").split("|PASS:")[0]||"";
+        }
+        if(!jjEmail){
+          const nm=c.name.toLowerCase().replace(/[^a-z ]/g,"").trim().split(" ");
+          jjEmail=nm.length>=2?nm[0]+"."+nm[nm.length-1]+"@jobjockey.in":nm[0]+"@jobjockey.in";
+        }
+        return `<tr>
+          <td><strong>${c.name}</strong></td>
+          <td style="font-size:12px">${c.email}</td>
+          <td>${c.phone||"—"}</td>
+          <td>${c.skill||"—"}</td>
+          <td>${c.edu_domain||"—"}</td>
+          <td>${c.duration||"—"}</td>
+          <td>${c.resume&&!c.resume.startsWith("LOGIN:")?`<a href="${c.resume}" target="_blank" style="color:var(--accent);font-size:12px">View</a>`:"—"}</td>
+          <td>${statusBadge(c.status)}</td>
+          <td style="font-size:12px;color:var(--accent)">${jjEmail}</td>
+        </tr>`;
+      }).join("")||`<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted)">No approved candidates yet</td></tr>`}
+      </tbody></table>
+    </div>`;
+    return;
+  }
+
+  document.getElementById("mainContent").innerHTML=`
+  <div class="table-card">
+
+    <!-- ── TOP HEADER ROW ── -->
+    <div class="table-card-header" style="flex-wrap:wrap;gap:10px">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <h3 id="candidateTabTitle">Applicants <span style="font-size:12px;color:var(--text-muted);font-family:'DM Sans',sans-serif;font-weight:400">(${data.length} total)</span></h3>
+        <!-- Switch tabs -->
+        <div style="display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:3px;gap:2px">
+          <button id="tabApplicants" onclick="setCandidateTab('applicants')"
+            style="padding:5px 14px;border-radius:6px;border:none;font-size:12.5px;font-weight:600;cursor:pointer;transition:all .2s;background:var(--accent);color:#000">
+            📋 Applicants
+          </button>
+          <button id="tabApplications" onclick="setCandidateTab('applications')"
+            style="padding:5px 14px;border-radius:6px;border:none;font-size:12.5px;font-weight:600;cursor:pointer;transition:all .2s;background:transparent;color:var(--text-muted)">
+            ✅ Approved
+          </button>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <!-- Upload CSV -->
+        <label style="cursor:pointer" title="Upload CSV file">
+          <span class="btn-sm btn-outline" style="display:inline-flex;align-items:center;gap:5px">
+            📁 Upload CSV
+          </span>
+          <input type="file" accept=".csv" id="csvFileInput" style="display:none" onchange="handleCsvUpload(event)">
+        </label>
+        <!-- Google Form Sync button -->
+        <button class="btn-sm btn-outline" onclick="toggleSyncPanel()" id="syncToggleBtn" style="display:inline-flex;align-items:center;gap:5px">
+          🔗 Google Form Sync
+        </button>
+        <!-- Export -->
+        <button class="btn-sm btn-outline" onclick="exportCandidates()" style="display:inline-flex;align-items:center;gap:5px">
+          ↓ Export CSV
+        </button>
+      </div>
+    </div>
+
+    <!-- ── GOOGLE FORM SYNC PANEL (collapsible) ── -->
+    <div id="syncPanel" style="display:none;padding:16px 20px;border-bottom:1px solid var(--border);background:rgba(245,158,11,0.04)">
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px">
+        <div style="flex:1;min-width:240px">
+          <label style="font-size:11px;font-weight:600;color:var(--text-soft);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">
+            Google Sheet CSV URL
+          </label>
+          <input id="gsheetUrl" class="search-input" style="width:100%;padding:9px 13px;font-size:13px"
+            placeholder="https://docs.google.com/spreadsheets/d/..." value="${savedSheetUrl}">
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0">
+          <button class="btn-sm btn-accent" onclick="syncGoogleForm()">🔄 Fetch & Import</button>
+          <button class="btn-sm btn-outline" onclick="clearSheetUrl()">✕ Clear</button>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted)">
+        💡 <strong>How:</strong> Google Sheets → File → Share → Publish to web → Select sheet → CSV → Publish → Copy link
+      </div>
+
+      <!-- Status -->
+      <div id="syncStatus" style="margin-top:10px;font-size:13px"></div>
+
+      <!-- Preview -->
+      <div id="sheetPreview" style="display:none;margin-top:12px">
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px" id="previewLabel"></div>
+        <div style="overflow-x:auto;max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
+          <table style="font-size:12px;width:100%">
+            <thead id="previewHead"></thead>
+            <tbody id="previewBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Column Mapping -->
+      <div id="columnMapSection" style="display:none;margin-top:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px">Map your form columns</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px" id="columnMapGrid"></div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button class="btn-sm btn-accent" onclick="importMappedData()">✓ Import Candidates</button>
+          <button class="btn-sm btn-outline" onclick="document.getElementById('columnMapSection').style.display='none'">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CSV UPLOAD PREVIEW (collapsible) ── -->
+    <div id="csvPreviewPanel" style="display:none;padding:16px 20px;border-bottom:1px solid var(--border);background:rgba(59,130,246,0.04)">
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text)">📁 CSV Upload Preview</div>
+      <div id="csvPreviewStatus" style="font-size:12px;color:var(--text-muted);margin-bottom:8px"></div>
+      <div style="overflow-x:auto;max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;margin-bottom:12px">
+        <table style="font-size:12px;width:100%">
+          <thead id="csvPreviewHead"></thead>
+          <tbody id="csvPreviewBody"></tbody>
+        </table>
+      </div>
+      <!-- CSV Column Map -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:12px" id="csvMapGrid"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-sm btn-accent" onclick="importCsvData()">✓ Import from CSV</button>
+        <button class="btn-sm btn-outline" onclick="document.getElementById('csvPreviewPanel').style.display='none'">Cancel</button>
+      </div>
+    </div>
+
+    <!-- ── SEARCH & FILTER ── -->
+    <!-- ── BULK ACTIONS ── -->
+    <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+        <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this.checked)" style="accent-color:var(--accent)"> Select All
+      </label>
+      <button class="action-btn action-approve" onclick="bulkApprove()">Approve Selected</button>
+      <button class="action-btn action-reject" onclick="bulkDelete()">Delete Selected</button>
+      <span id="bulkCount" style="font-size:12px;color:var(--text-muted)">0 selected</span>
+    </div>
+
+    <div class="table-tools">
+      <input class="search-input" placeholder="🔍 Search candidates..." oninput="filterTable('candidateBody',this.value)">
+      <select class="filter-select" onchange="filterCol('candidateBody',5,this.value)">
+        <option value="">All Status</option><option>Pending</option><option>Approved</option><option>Rejected</option>
+      </select>
+    </div>
+
+    <!-- ── CANDIDATES TABLE ── -->
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr><th style="width:30px"></th><th>Name</th><th>Email</th><th>Phone</th><th>Skills</th><th>Status</th><th>State</th><th>College/University</th><th>Domain</th><th>Duration</th><th>Resume</th><th>Actions</th></tr></thead>
+      <tbody id="candidateBody">
+      ${data.map(c=>`<tr id="crow_${c.id}">
+        <td><input type="checkbox" class="candCheck" value="${c.id}" onchange="updateBulkCount()" style="accent-color:var(--accent)"></td>
+        <td><strong>${c.name}</strong></td>
+        <td style="font-size:12px">${c.email}</td>
+        <td>${c.phone||"—"}</td>
+        <td>${c.skill||"—"}</td>
+        <td>${statusBadge(c.status)}</td>
+        <td>${c.state||"—"}</td>
+        <td style="max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.college||"—"}</td>
+        <td>${c.edu_domain||"—"}</td>
+        <td>${c.duration||"—"}</td>
+        <td>${c.resume&&!c.resume.startsWith("LOGIN:")?`<a href="${c.resume}" target="_blank" style="color:var(--accent);font-size:12px">View</a>`:"—"}</td>
+        <td style="display:flex;gap:4px;flex-wrap:wrap">
+          ${c.status==="Pending"?`<button class="action-btn action-approve" onclick="updateCandidate(${c.id},'Approved')" title="Approve">✓</button><button class="action-btn action-reject" onclick="updateCandidate(${c.id},'Rejected')" title="Reject">✗</button>`:""}
+          ${c.status==="Approved"?`<button class="action-btn action-edit" onclick="goAssignTask('${c.email}','${c.name}')" title="Assign Task">📋</button>`:""}
+          ${isAdmin()?`<button class="action-btn action-edit" onclick="openSendEmailModal('${c.email}','${c.name}')" title="Send Email">📧</button><button class="action-btn action-reject" onclick="deleteCandidate(${c.id},'${c.name}')" title="Delete">🗑</button>`:""}
+        </td>
+      </tr>`).join("")||`<tr><td colspan="12" style="text-align:center;padding:24px;color:var(--text-muted)">No candidates yet — use Google Form Sync or Upload CSV above!</td></tr>`}
+      </tbody>
+    </table>
+    </div>
+  </div>`;
+}
+
+function toggleSyncPanel(){
+  const p=document.getElementById("syncPanel");
+  const isOpen=p.style.display==="block";
+  p.style.display=isOpen?"none":"block";
+  document.getElementById("syncToggleBtn").style.borderColor=isOpen?"var(--border)":"var(--accent)";
+  document.getElementById("syncToggleBtn").style.color=isOpen?"var(--text-soft)":"var(--accent)";
+}
+
+// ── CSV FILE UPLOAD ───────────────────────────
+let csvRows=[], csvHeaders=[];
+
+function handleCsvUpload(event){
+  const file=event.target.files[0];
+  if(!file){return;}
+  if(!file.name.endsWith(".csv")){showToast("Please select a .csv file","error");return;}
+
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const text=e.target.result;
+    const lines=text.trim().split("\n").map(line=>{
+      const result=[]; let cur="", inQ=false;
+      for(let ch of line){
+        if(ch==='"'&&!inQ){inQ=true;continue;}
+        if(ch==='"'&&inQ){inQ=false;continue;}
+        if(ch===","&&!inQ){result.push(cur.trim());cur="";continue;}
+        cur+=ch;
+      }
+      result.push(cur.trim());
+      return result;
+    });
+
+    if(lines.length<2){showToast("CSV file is empty or has no data rows","error");return;}
+
+    csvHeaders=lines[0];
+    csvRows=lines.slice(1).filter(r=>r.some(c=>c));
+
+    // Show preview panel
+    const panel=document.getElementById("csvPreviewPanel");
+    document.getElementById("csvPreviewStatus").textContent=`✅ ${csvRows.length} rows found in "${file.name}"`;
+
+    document.getElementById("csvPreviewHead").innerHTML=`<tr>${csvHeaders.map(h=>`<th style="background:rgba(255,255,255,0.04);padding:6px 10px;font-size:11px;color:var(--text-muted);white-space:nowrap">${h}</th>`).join("")}</tr>`;
+    document.getElementById("csvPreviewBody").innerHTML=csvRows.slice(0,5).map(r=>`<tr>${r.map(c=>`<td style="padding:5px 10px;border-top:1px solid var(--border);white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis">${c||"—"}</td>`).join("")}</tr>`).join("");
+
+    // Build column mapping dropdowns for CSV
+    const fields=[{key:"csvName",label:"Full Name *"},{key:"csvEmail",label:"Email *"},{key:"csvPhone",label:"Phone"},{key:"csvSkill",label:"Skills / Role"}];
+    document.getElementById("csvMapGrid").innerHTML=fields.map(f=>`
+    <div>
+      <label style="font-size:11px;font-weight:600;color:var(--text-soft);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">${f.label}</label>
+      <select id="${f.key}" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-size:13px">
+        ${f.key==="csvName"||f.key==="csvEmail"?"":"<option value=''>— Skip —</option>"}
+        ${csvHeaders.map((h,i)=>{
+          const hl=h.toLowerCase();
+          const auto=(f.key==="csvName"&&(hl.includes("name")||hl.includes("full")))||
+                     (f.key==="csvEmail"&&hl.includes("email"))||
+                     (f.key==="csvPhone"&&(hl.includes("phone")||hl.includes("mobile")||hl.includes("contact")))||
+                     (f.key==="csvSkill"&&(hl.includes("skill")||hl.includes("role")||hl.includes("position")||hl.includes("domain")));
+          return `<option value="${i}" ${auto?"selected":""}>${h}</option>`;
+        }).join("")}
+      </select>
+    </div>`).join("");
+
+    panel.style.display="block";
+    panel.scrollIntoView({behavior:"smooth",block:"nearest"});
+    showToast(`${csvRows.length} rows loaded from CSV`,"success");
+  };
+  reader.readAsText(file);
+  // Reset input so same file can be re-uploaded
+  event.target.value="";
+}
+
+async function importCsvData(){
+  const nameCol =document.getElementById("csvName")?.value;
+  const emailCol=document.getElementById("csvEmail")?.value;
+  const phoneCol=document.getElementById("csvPhone")?.value;
+  const skillCol=document.getElementById("csvSkill")?.value;
+
+  if(nameCol===""||nameCol===undefined){showToast("Map the Name column","error");return;}
+  if(emailCol===""||emailCol===undefined){showToast("Map the Email column","error");return;}
+
+  let imported=0, skipped=0;
+  for(const row of csvRows){
+    const name =row[parseInt(nameCol)]?.trim();
+    const email=row[parseInt(emailCol)]?.trim();
+    if(!name||!email){skipped++;continue;}
+    const phone=phoneCol!==""&&phoneCol!==undefined?row[parseInt(phoneCol)]?.trim()||"":"";
+    const skill=skillCol!==""&&skillCol!==undefined?row[parseInt(skillCol)]?.trim()||"":"";
+    try{await api("/candidates","POST",{name,email,phone,skill,resume:""});imported++;}
+    catch(e){skipped++;}
+  }
+  showToast(`Imported ${imported} candidates! (${skipped} skipped)`,"success");
+  document.getElementById("csvPreviewPanel").style.display="none";
+  setTimeout(()=>renderCandidates(),600);
+}
+
+// ── GOOGLE SHEET SYNC ────────────────────────────
+let sheetRows = [], sheetHeaders = [];
+
+async function syncGoogleForm(){
+  const urlInput = document.getElementById("gsheetUrl");
+  let url = urlInput?.value.trim();
+  if(!url){ showToast("Paste a Google Sheet CSV URL first","error"); return; }
+
+  // Auto-convert normal Google Sheets share URL to CSV export URL
+  if(url.includes("docs.google.com/spreadsheets") && !url.includes("export?format=csv")){
+    const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    if(match){
+      const sheetId = match[1];
+      const gidMatch = url.match(/gid=(\d+)/);
+      const gid = gidMatch ? gidMatch[1] : "0";
+      url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+      urlInput.value = url;
+    }
+  }
+
+  // Save URL
+  localStorage.setItem("gsheet_url", url);
+
+  const status = document.getElementById("syncStatus");
+  status.innerHTML = `<span style="color:var(--accent)">⏳ Fetching data from Google Sheets...</span>`;
+
+  try{
+    // Try multiple CORS proxies in order
+    const proxies = [
+      `https://corsproxy.io/?${encodeURIComponent(url)}`,
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+      `https://cors-anywhere.herokuapp.com/${url}`
+    ];
+
+    let text = null;
+    for(const proxyUrl of proxies){
+      try{
+        const res = await fetch(proxyUrl);
+        if(res.ok){ text = await res.text(); break; }
+      }catch(e){ continue; }
+    }
+    if(!text) throw new Error("All CORS proxies failed. Make sure your Google Sheet is published publicly as CSV.");
+
+    // Parse CSV
+    const lines = text.trim().split("\n").map(line => {
+      // Handle quoted CSV values
+      const result = [];
+      let cur = "", inQ = false;
+      for(let ch of line){
+        if(ch==='"' && !inQ){ inQ=true; continue; }
+        if(ch==='"' && inQ){ inQ=false; continue; }
+        if(ch==="," && !inQ){ result.push(cur.trim()); cur=""; continue; }
+        cur += ch;
+      }
+      result.push(cur.trim());
+      return result;
+    });
+
+    if(lines.length < 2){ showToast("Sheet appears empty","error"); return; }
+
+    sheetHeaders = lines[0];
+    sheetRows = lines.slice(1).filter(r => r.some(c => c));
+
+    // Show preview
+    const preview = document.getElementById("sheetPreview");
+    const previewLabel = document.getElementById("previewLabel");
+    const previewHead = document.getElementById("previewHead");
+    const previewBody = document.getElementById("previewBody");
+
+    previewLabel.textContent = `✅ Fetched ${sheetRows.length} responses. Preview (first 5 rows):`;
+    previewHead.innerHTML = `<tr>${sheetHeaders.map(h=>`<th style="background:rgba(255,255,255,0.04);padding:6px 10px;font-size:11px;color:var(--text-muted);white-space:nowrap">${h}</th>`).join("")}</tr>`;
+    previewBody.innerHTML = sheetRows.slice(0,5).map(r=>`<tr>${r.map(c=>`<td style="padding:5px 10px;border-top:1px solid var(--border);white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis">${c||"—"}</td>`).join("")}</tr>`).join("");
+    preview.style.display = "block";
+
+    // Show column mapping
+    showColumnMapping();
+    status.innerHTML = `<span style="color:var(--green)">✅ ${sheetRows.length} rows fetched. Map your columns below and click Import.</span>`;
+
+  }catch(err){
+    status.innerHTML = `<span style="color:var(--red)">❌ ${err.message}</span>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:6px">
+      Make sure your Google Sheet is <strong>published to web as CSV</strong>:<br>
+      Google Sheets → File → Share → Publish to web → Select sheet → CSV → Publish
+    </div>`;
+  }
+}
+
+function showColumnMapping(){
+  const section = document.getElementById("columnMapSection");
+  const grid = document.getElementById("columnMapGrid");
+
+  const fields = [
+    {key:"name",  label:"Full Name *",    required:true},
+    {key:"email", label:"Email *",         required:true},
+    {key:"phone", label:"Phone",           required:false},
+    {key:"skill", label:"Skills / Role",   required:false},
+  ];
+
+  grid.innerHTML = fields.map(f=>`
+  <div>
+    <label style="font-size:11px;font-weight:600;color:var(--text-soft);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">${f.label}</label>
+    <select id="map_${f.key}" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px">
+      ${f.required?"":"<option value=''>— Skip —</option>"}
+      ${sheetHeaders.map((h,i)=>{
+        // Auto-detect common column names
+        const hl = h.toLowerCase();
+        const autoMatch = (f.key==="name" && (hl.includes("name")||hl.includes("full"))) ||
+                          (f.key==="email" && hl.includes("email")) ||
+                          (f.key==="phone" && (hl.includes("phone")||hl.includes("mobile")||hl.includes("contact"))) ||
+                          (f.key==="skill" && (hl.includes("skill")||hl.includes("role")||hl.includes("position")||hl.includes("domain")||hl.includes("technology")));
+        return `<option value="${i}" ${autoMatch?"selected":""}>${h}</option>`;
+      }).join("")}
+    </select>
+  </div>`).join("");
+
+  section.style.display = "block";
+}
+
+async function importMappedData(){
+  const nameCol  = parseInt(document.getElementById("map_name")?.value);
+  const emailCol = parseInt(document.getElementById("map_email")?.value);
+  const phoneCol = document.getElementById("map_phone")?.value;
+  const skillCol = document.getElementById("map_skill")?.value;
+
+  if(isNaN(nameCol)  || document.getElementById("map_name")?.value  === ""){ showToast("Please map the Name column","error");  return; }
+  if(isNaN(emailCol) || document.getElementById("map_email")?.value === ""){ showToast("Please map the Email column","error"); return; }
+
+  const status = document.getElementById("syncStatus");
+  status.innerHTML = `<span style="color:var(--accent)">⏳ Importing candidates...</span>`;
+
+  let imported = 0, skipped = 0, errors = 0;
+
+  for(const row of sheetRows){
+    const name  = row[nameCol]?.trim();
+    const email = row[emailCol]?.trim();
+    if(!name || !email){ skipped++; continue; }
+
+    const phone = phoneCol !== "" && phoneCol !== undefined ? (row[parseInt(phoneCol)]?.trim()||"") : "";
+    const skill = skillCol !== "" && skillCol !== undefined ? (row[parseInt(skillCol)]?.trim()||"") : "";
+
+    try{
+      await api("/candidates","POST",{name, email, phone, skill, resume:""});
+      imported++;
+    }catch(e){
+      // Skip duplicates silently
+      skipped++;
+    }
+  }
+
+  status.innerHTML = `<span style="color:var(--green)">✅ Done! ${imported} imported, ${skipped} skipped (duplicates/empty rows)</span>`;
+  showToast(`Imported ${imported} candidates!`, "success");
+
+  // Hide mapping, refresh table
+  document.getElementById("columnMapSection").style.display = "none";
+  document.getElementById("sheetPreview").style.display = "none";
+
+  // Reload candidates table
+  setTimeout(()=> renderCandidates(), 800);
+}
+
+function clearSheetUrl(){
+  localStorage.removeItem("gsheet_url");
+  const inp = document.getElementById("gsheetUrl");
+  if(inp) inp.value = "";
+  document.getElementById("sheetPreview").style.display = "none";
+  document.getElementById("columnMapSection").style.display = "none";
+  document.getElementById("syncStatus").innerHTML = "";
+  showToast("Sheet URL cleared","info");
+}
+async function updateCandidate(id,status){
+  try{
+    const c=await api("/candidates/"+id,"PATCH",{status});
+    if(status==="Approved"){
+      await loadAllUsers();
+      populateAssignDropdown();
+
+      // Get exact credentials generated by backend
+      let jjEmail="", jjPass="Welcome@123";
+      if(c.resume&&c.resume.startsWith("LOGIN:")){
+        const parts=c.resume.replace("LOGIN:","").split("|PASS:");
+        jjEmail=parts[0]||"";
+        jjPass="123";
+      }
+      // Fallback: generate from name same way as backend
+      if(!jjEmail){
+        const nm=c.name.toLowerCase().replace(/[^a-z ]/g,"").trim().split(" ");
+        jjEmail=nm.length>=2?`${nm[0]}.${nm[nm.length-1]}@jobjockey.in`:`${nm[0]}@jobjockey.in`;
+      }
+
+      // Send welcome email with login credentials
+      const emailBody=
+        "Congratulations "+c.name+"!\n\n"+
+        "You have been selected as an Intern for Job Jockey.\n\n"+
+        "Your Login Credentials:\n"+
+        "Email    : "+jjEmail+"\n"+
+        "Password : 123 (same as all users)\n"+"\n\n"+
+        "Please login using above credentials and change your password after first login.\n\n"+
+        "We look forward to working with you!\n\n"+
+        "Best regards,\n"+
+        "Job Jockey Team";
+
+      const emailSent=await sendEmailJS(
+        c.email, c.name,
+        "Congratulations! You are selected as Intern for Job Jockey",
+        emailBody
+      );
+
+      showToast(
+        emailSent
+          ?`✅ ${c.name} approved! Email sent to ${c.email}`
+          :`✅ ${c.name} approved! Setup EmailJS to send emails automatically`,
+        "success"
+      );
+
+      alert(
+        `✅ ${c.name} is now an Intern!\n\n`+
+        `Platform Login:\n`+
+        `📧 Email    : ${jjEmail}\n`+
+        `🔑 Password : ${jjPass}\n\n`+
+        (emailSent
+          ?`📬 Welcome email sent to: ${c.email}`
+          :`⚠️ Email not sent — go to Email Settings in sidebar to configure EmailJS`)
+      );
+
+    } else {
+      showToast("Candidate "+status.toLowerCase(),"info");
+    }
+    renderCandidates();
+  }
+  catch(e){showToast("Failed: "+e.message,"error");}
+}
+// ── CANDIDATE TAB SWITCH ─────────────────────
+let candidateTab = "applicants";
+
+function setCandidateTab(tab){
+  candidateTab = tab;
+  const btnA = document.getElementById("tabApplicants");
+  const btnB = document.getElementById("tabApplications");
+  if(!btnA||!btnB) return;
+
+  if(tab === "applicants"){
+    btnA.style.background = "var(--accent)"; btnA.style.color = "#000";
+    btnB.style.background = "transparent";   btnB.style.color = "var(--text-muted)";
+    document.getElementById("candidateTabTitle").innerHTML =
+      'Applicants <span style="font-size:12px;color:var(--text-muted);font-weight:400">All Applications</span>';
+  } else {
+    btnB.style.background = "var(--accent)"; btnB.style.color = "#000";
+    btnA.style.background = "transparent";   btnA.style.color = "var(--text-muted)";
+    document.getElementById("candidateTabTitle").innerHTML =
+      'Approved Interns <span style="font-size:12px;color:var(--text-muted);font-weight:400">Elected candidates</span>';
+  }
+
+  // Filter the table rows
+  document.querySelectorAll("#candidateBody tr").forEach(row=>{
+    const statusCell = row.querySelectorAll("td")[4];
+    if(!statusCell){ row.style.display=""; return; }
+    const status = statusCell.textContent.trim();
+    if(tab === "applicants"){
+      row.style.display = "";           // show all
+    } else {
+      row.style.display = status.includes("Approved") ? "" : "none";  // show only approved
+    }
+  });
+}
+
+async function deleteCandidate(id,name){
+  if(!confirm("Delete "+name+"?"))return;
+  try{await api("/candidates/"+id,"DELETE");showToast("Deleted","error");renderCandidates();}
+  catch(e){showToast("Failed: "+e.message,"error");}
+}
+function toggleSelectAll(checked){
+  document.querySelectorAll(".candCheck").forEach(cb=>cb.checked=checked);
+  updateBulkCount();
+}
+function updateBulkCount(){
+  const count=document.querySelectorAll(".candCheck:checked").length;
+  const el=document.getElementById("bulkCount");
+  if(el) el.textContent=count+" selected";
+  const sa=document.getElementById("selectAll");
+  if(sa) sa.checked=count>0&&count===document.querySelectorAll(".candCheck").length;
+}
+async function bulkApprove(){
+  const ids=Array.from(document.querySelectorAll(".candCheck:checked")).map(cb=>parseInt(cb.value));
+  if(!ids.length){showToast("Select at least one candidate","error");return;}
+  if(!confirm("Approve "+ids.length+" candidates?"))return;
+  let done=0;
+  for(const id of ids){
+    try{await api("/candidates/"+id,"PATCH",{status:"Approved"});done++;}catch(e){}
+  }
+  showToast(done+" candidates approved!","success");
+  await loadAllUsers();
+  renderCandidates();
+}
+async function bulkDelete(){
+  const ids=Array.from(document.querySelectorAll(".candCheck:checked")).map(cb=>parseInt(cb.value));
+  if(!ids.length){showToast("Select at least one candidate","error");return;}
+  if(!confirm("Delete "+ids.length+" candidates? This cannot be undone."))return;
+  let done=0;
+  for(const id of ids){
+    try{await api("/candidates/"+id,"DELETE");done++;}catch(e){}
+  }
+  showToast(done+" candidates deleted","error");
+  renderCandidates();
+}
+async function exportCandidates(){
+  try{
+    const data=await api("/candidates");
+    const csv=["ID,Name,Email,Phone,Skills,Status",...data.map(c=>`${c.id},"${c.name}",${c.email},${c.phone||""},"${c.skill||""}",${c.status}`)].join("\n");
+    const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="candidates.csv";a.click();
+    showToast("Exported!","success");
+  }catch(e){showToast("Export failed","error");}
+}
+
+// ════════════════════════════════════════════
+// TASKS
+// ════════════════════════════════════════════
+async function renderTasks(){
+  let data=[];
+  try{data=await api("/tasks");}catch(e){showToast("Failed","error");return;}
+  populateAssignDropdown();
+  document.getElementById("mainContent").innerHTML=`
+  <div class="table-card">
+    <div class="table-card-header"><h3>All Tasks</h3>
+      <div style="display:flex;gap:8px">
+        <select class="filter-select" onchange="filterCol('taskBody',4,this.value)"><option value="">All Status</option><option>Pending</option><option>In Progress</option><option>Completed</option></select>
+        ${canManage()?`<button class="btn-sm btn-accent" onclick="openModal('taskModal')">+ Create Task</button>`:""}
+      </div>
+    </div>
+    <table><thead><tr><th>Task</th><th>Assigned To</th><th>Project</th><th>Priority</th><th>Status</th><th>Deadline</th>${canManage()?"<th>Action</th>":""}</tr></thead>
+    <tbody id="taskBody">
+    ${data.map(t=>`<tr>
+      <td><strong>${t.title}</strong><br><span style="font-size:11.5px;color:var(--text-muted)">${t.description||""}</span></td>
+      <td>${t.assigned_to||"—"}</td><td>${t.project||"—"}</td><td>${prioritySpan(t.priority)}</td>
+      <td><select style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);font-size:12px" onchange="updateTaskStatus(${t.id},this.value)">
+        ${["Pending","In Progress","Completed"].map(s=>`<option ${t.status===s?"selected":""}>${s}</option>`).join("")}
+      </select></td>
+      <td>${t.deadline||"TBD"}</td>
+      ${canManage()?`<td><button class="action-btn action-reject" onclick="deleteTask(${t.id})">Remove</button></td>`:""}
+    </tr>`).join("")||`<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted)">No tasks yet</td></tr>`}
+    </tbody></table>
+  </div>`;
+}
+async function updateTaskStatus(id,status){
+  try{await api("/tasks/"+id,"PATCH",{status});showToast("Marked as "+status,"success");}
+  catch(e){showToast("Failed: "+e.message,"error");}
+}
+async function deleteTask(id){
+  try{await api("/tasks/"+id,"DELETE");showToast("Task removed","error");renderTasks();}
+  catch(e){showToast("Failed: "+e.message,"error");}
+}
+async function createTask(){
+  const title=document.getElementById("tTitle").value.trim();
+  if(!title){showToast("Enter a task title","error");return;}
+  try{
+    await api("/tasks","POST",{title,description:document.getElementById("tDesc").value||"",assigned_to:document.getElementById("tAssign").value,priority:document.getElementById("tPriority").value,status:"Pending",deadline:document.getElementById("tDeadline").value||"TBD",project:document.getElementById("tProject").value||""});
+    closeModal("taskModal");
+    document.getElementById("tTitle").value="";document.getElementById("tDesc").value="";
+    showToast("Task created!","success");
+    if(currentSection==="tasks"||currentSection==="dashboard")navTo(currentSection);
+  }catch(e){showToast("Failed: "+e.message,"error");}
+}
+
+// ════════════════════════════════════════════
+// PROJECTS
+// ════════════════════════════════════════════
+async function renderProjects(){
+  let data=[];
+  try{data=await api("/projects");}catch(e){showToast("Failed","error");return;}
+
+  // Inject modals dynamically
+  document.getElementById("projectModal")?.remove();
+  document.getElementById("editProjectModal")?.remove();
+
+  // Create project modal
+  const m1=document.createElement("div");
+  m1.innerHTML=`<div class="modal-overlay hidden" id="projectModal" onclick="if(event.target===this)closeModal('projectModal')">
+    <div class="modal">
+      <h3>New Project</h3>
+      <div class="field"><label>Project Name</label><input id="pjName" placeholder="e.g. Website Revamp"></div>
+      <div class="field"><label>Description</label><textarea id="pjDesc" placeholder="What is this project about?"></textarea></div>
+      <div class="field"><label>Color</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+          ${["#3b82f6","#f59e0b","#10b981","#8b5cf6","#ef4444","#06b6d4","#ec4899","#f97316"].map(col=>
+            `<div onclick="selectPjColor('${col}')" data-col="${col}" style="width:24px;height:24px;border-radius:50%;background:${col};cursor:pointer;border:2px solid transparent;transition:transform .15s" title="${col}"></div>`
+          ).join("")}
+        </div>
+        <input type="hidden" id="pjColor" value="#3b82f6">
+      </div>
+      <div class="modal-footer">
+        <button class="btn-sm btn-outline" onclick="closeModal('projectModal')">Cancel</button>
+        <button class="btn-sm btn-accent" onclick="createProject()">Create</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(m1.firstElementChild);
+
+  // Edit project modal
+  const m2=document.createElement("div");
+  m2.innerHTML=`<div class="modal-overlay hidden" id="editProjectModal" onclick="if(event.target===this)closeModal('editProjectModal')">
+    <div class="modal">
+      <h3>Edit Project</h3>
+      <input type="hidden" id="epId">
+      <div class="field"><label>Project Name</label><input id="epName" placeholder="Project name"></div>
+      <div class="field"><label>Description</label><textarea id="epDesc" placeholder="Description"></textarea></div>
+      <div class="field"><label>Status</label>
+        <select id="epStatus" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px">
+          <option>In Progress</option><option>Pending</option><option>Completed</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Progress — <span id="epProgressVal" style="color:var(--accent);font-weight:700">0%</span></label>
+        <input type="range" id="epProgress" min="0" max="100" step="5" value="0"
+          oninput="document.getElementById('epProgressVal').textContent=this.value+'%';document.getElementById('epProgressBar').style.width=this.value+'%'"
+          style="width:100%;accent-color:var(--accent);cursor:pointer;margin-top:6px">
+        <div class="progress-bar" style="margin-top:8px">
+          <div class="progress-fill" id="epProgressBar" style="width:0%;background:var(--accent);transition:width .2s"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-sm btn-outline" onclick="closeModal('editProjectModal')">Cancel</button>
+        <button class="btn-sm btn-accent" onclick="saveProjectEdit()">✓ Save Changes</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(m2.firstElementChild);
+
+  document.getElementById("mainContent").innerHTML=`
+  <div class="table-card">
+    <div class="table-card-header">
+      <h3>All Projects</h3>
+      ${isAdmin()||isSuperAdmin()?`<button class="btn-sm btn-accent" onclick="openModal('projectModal')">+ New Project</button>`:""}
+    </div>
+    <table><thead><tr><th>Project</th><th>Progress</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>
+    ${data.map(p=>`<tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:10px;height:10px;border-radius:50%;background:${p.color};flex-shrink:0"></div>
+          <div><strong>${p.name}</strong><br><span style="font-size:11.5px;color:var(--text-muted)">${p.description||""}</span></div>
+        </div>
+      </td>
+      <td style="min-width:180px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="progress-bar" style="flex:1;cursor:${canManage()?'pointer':'default'}" 
+            ${canManage()?`onclick="quickProgress(${p.id},${p.progress},'${p.color}')" title="Click to update progress"`:""}> 
+            <div class="progress-fill" style="width:${p.progress}%;background:${p.color}"></div>
+          </div>
+          <span style="font-size:12px;font-weight:700;color:${p.color};min-width:32px">${p.progress}%</span>
+        </div>
+      </td>
+      <td>${statusBadge(p.status)}</td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap">
+        ${canManage()?`<button class="action-btn action-edit" onclick="openEditProject(${p.id},'${p.name.replace(/'/g,"\'")}','${(p.description||"").replace(/'/g,"\'")}',${p.progress},'${p.status}','${p.color}')">✏️ Edit</button>`:""}
+        ${isAdmin()?`<button class="action-btn action-reject" onclick="deleteProject(${p.id})">🗑</button>`:""}
+      </td>
+    </tr>`).join("")||`<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted)">No projects yet</td></tr>`}
+    </tbody></table>
+  </div>`;
+
+  // Highlight default color
+  selectPjColor("#3b82f6");
+}
+
+function selectPjColor(col){
+  document.getElementById("pjColor").value=col;
+  document.querySelectorAll("#projectModal [data-col]").forEach(el=>{
+    el.style.border=el.dataset.col===col?"3px solid white":"2px solid transparent";
+    el.style.transform=el.dataset.col===col?"scale(1.2)":"scale(1)";
+  });
+}
+
+function openEditProject(id,name,desc,progress,status,color){
+  document.getElementById("epId").value=id;
+  document.getElementById("epName").value=name;
+  document.getElementById("epDesc").value=desc;
+  document.getElementById("epProgress").value=progress;
+  document.getElementById("epProgressVal").textContent=progress+"%";
+  document.getElementById("epProgressBar").style.width=progress+"%";
+  document.getElementById("epProgressBar").style.background=color;
+  document.getElementById("epStatus").value=status;
+  openModal("editProjectModal");
+}
+
+function quickProgress(id, current, color){
+  // Inline quick-update popup on the progress bar click
+  const val=prompt("Set progress % (0-100):", current);
+  if(val===null) return;
+  const num=Math.min(100,Math.max(0,parseInt(val)||0));
+  const status=num===100?"Completed":num===0?"Pending":"In Progress";
+  api("/projects/"+id,"PATCH",{progress:num,status}).then(()=>{
+    showToast("Progress updated to "+num+"%","success");
+    renderProjects();
+  }).catch(e=>showToast("Failed: "+e.message,"error"));
+}
+
+async function saveProjectEdit(){
+  const id=document.getElementById("epId").value;
+  const name=document.getElementById("epName").value.trim();
+  if(!name){showToast("Enter project name","error");return;}
+  const progress=parseInt(document.getElementById("epProgress").value)||0;
+  const status=document.getElementById("epStatus").value;
+  const desc=document.getElementById("epDesc").value||"";
+  // Auto-set status based on progress if not manually changed
+  const finalStatus=progress===100?"Completed":status;
+  try{
+    await api("/projects/"+id,"PATCH",{name,description:desc,progress,status:finalStatus});
+    closeModal("editProjectModal");
+    showToast("Project updated!","success");
+    renderProjects();
+  }catch(e){showToast("Failed: "+e.message,"error");}
+}
+
+async function createProject(){
+  const name=document.getElementById("pjName")?.value.trim();
+  if(!name){showToast("Enter project name","error");return;}
+  const color=document.getElementById("pjColor")?.value||"#3b82f6";
+  try{
+    await api("/projects","POST",{name,description:document.getElementById("pjDesc")?.value||"",status:"In Progress",progress:0,color});
+    closeModal("projectModal");showToast("Project created!","success");renderProjects();
+  }catch(e){showToast("Failed: "+e.message,"error");}
+}
+async function deleteProject(id){
+  if(!confirm("Delete this project?"))return;
+  try{await api("/projects/"+id,"DELETE");showToast("Project deleted","error");renderProjects();}
+  catch(e){showToast("Failed","error");}
+}
+
+// ════════════════════════════════════════════
+// ATTENDANCE
+// ════════════════════════════════════════════
+async function renderAttendance(){
+  const today=new Date().toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long"});
+  const todayISO=new Date().toISOString().split("T")[0];
+  let data=[];
+  try{data=await api("/attendance?date="+todayISO);}catch(e){}
+  const members=allUsers.filter(u=>u.role!=="admin");
+  document.getElementById("mainContent").innerHTML=`
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:13px;color:var(--text-muted)">📅 ${today}</div>
+    ${isIntern()?`<button class="btn-sm btn-accent" onclick="markMyAttendance()">✓ Mark Present Today</button>`:`<button class="btn-sm btn-outline" onclick="exportAttendance()">↓ Export CSV</button>`}
+  </div>
+  <div class="attend-grid">
+  ${members.map((u,i)=>{
+    const rec=data.find(a=>a.email===u.email);
+    const color=COLORS[i%COLORS.length];
+    const status=rec?rec.status:"Not Marked";
+    return `<div class="attend-card">
+      <div class="attend-avatar" style="background:${color}22;color:${color};border:2px solid ${color}44">${u.name.split(" ").map(w=>w[0]).join("")}</div>
+      <div class="attend-info">
+        <div class="an">${u.name}</div>
+        <div style="margin-top:3px">${roleBadge(u.role)}</div>
+        <div style="margin-top:6px">${statusBadge(status)}</div>
+        ${canManage()?`<div style="display:flex;gap:4px;margin-top:8px">
+          <button class="action-btn action-approve" style="font-size:11px;padding:3px 8px" onclick="markAttendanceFor('${u.email}','Present','${todayISO}')">P</button>
+          <button class="action-btn action-reject" style="font-size:11px;padding:3px 8px" onclick="markAttendanceFor('${u.email}','Absent','${todayISO}')">A</button>
+          <button class="action-btn action-edit" style="font-size:11px;padding:3px 8px" onclick="markAttendanceFor('${u.email}','Leave','${todayISO}')">L</button>
+        </div>`:""}
+      </div>
+    </div>`;
+  }).join("")||`<div style="color:var(--text-muted)">No team members</div>`}
+  </div>`;
+}
+async function markAttendanceFor(email,status,date){
+  try{await api("/attendance","POST",{email,status,date});showToast(email.split("@")[0]+" → "+status,"success");renderAttendance();}
+  catch(e){showToast("Failed: "+e.message,"error");}
+}
+async function markMyAttendance(){
+  const date=new Date().toISOString().split("T")[0];
+  try{await api("/attendance","POST",{status:"Present",date});showToast("Attendance marked!","success");renderAttendance();}
+  catch(e){showToast("Failed: "+e.message,"error");}
+}
+async function exportAttendance(){
+  try{
+    const data=await api("/attendance");
+    const csv=["Email,Date,Status",...data.map(a=>`${a.email},${a.date},${a.status}`)].join("\n");
+    const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="attendance.csv";a.click();
+    showToast("Exported!","success");
+  }catch(e){showToast("Export failed","error");}
+}
+
+// ════════════════════════════════════════════
+// REPORTS
+// ════════════════════════════════════════════
+let reportFileData="", reportFileName="";
+
+async function renderReports(){
+  let data=[];
+  try{data=await api("/reports");}catch(e){showToast("Failed","error");}
+  document.getElementById("mainContent").innerHTML=`
+  ${isIntern()||canManage()?`
+  <div class="report-form">
+    <h3 style="font-size:16px;font-weight:600;margin-bottom:18px">Submit Report</h3>
+    <div class="field"><label>Task Title</label><input id="rTask" placeholder="What task are you reporting on?"></div>
+    <div class="field"><label>Description</label><textarea id="rDesc" placeholder="Describe what you worked on..."></textarea></div>
+    <div class="field">
+      <label>Attach File <span style="color:var(--text-muted);font-weight:400">(any type — PDF, image, doc, zip…)</span></label>
+      <label style="cursor:pointer;display:inline-flex;align-items:center;gap:8px;background:var(--surface2);border:1.5px dashed var(--border);border-radius:10px;padding:12px 18px;transition:border-color .2s" id="fileDropZone">
+        <span style="font-size:20px">📎</span>
+        <span id="fileLabel" style="font-size:13px;color:var(--text-muted)">Click to choose file or drop here</span>
+        <input type="file" id="rFileInput" style="display:none" onchange="handleReportFile(event)">
+      </label>
+      <div id="filePreview" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:8px;font-size:12.5px;color:var(--green);display:flex;align-items:center;gap:8px">
+        <span>✅</span><span id="filePreviewName"></span>
+        <button onclick="clearReportFile()" style="margin-left:auto;background:none;border:none;color:var(--red);cursor:pointer;font-size:14px">✕</button>
+      </div>
+    </div>
+    <button class="btn-sm btn-accent" onclick="submitReport()">Submit Report</button>
+  </div><div style="height:20px"></div>`:""}
+  <div class="table-card">
+    <div class="table-card-header"><h3>${canManage()?"All Reports":"My Reports"}</h3><button class="btn-sm btn-outline" onclick="exportReports()">↓ Export CSV</button></div>
+    <table><thead><tr><th>Submitted By</th><th>Task</th><th>Date</th><th>Description</th><th>File</th>${canManage()?"<th>Status</th>":""}</tr></thead>
+    <tbody>
+    ${data.map(r=>`<tr>
+      <td><strong>${(()=>{const u=allUsers.find(u=>u.email===r.submitted_by);return u?u.name:(r.submitted_by||"—")})()}</strong><br><span style="font-size:11px;color:var(--text-muted)">${r.submitted_by||""}</span></td>
+      <td>${r.title}</td>
+      <td>${r.submitted_at?new Date(r.submitted_at).toLocaleDateString("en-IN"):"—"}</td>
+      <td style="max-width:180px;font-size:12.5px;color:var(--text-muted)">${r.description||"—"}</td>
+      <td>${r.file_name&&r.file_data?`<button class="action-btn action-view" onclick="downloadReportFile('${r.file_name}','${r.file_data}')">📥 ${r.file_name}</button>`:r.file_name?`<span style="font-size:12px;color:var(--text-muted)">📄 ${r.file_name}</span>`:"—"}</td>
+      ${canManage()?`<td>${r.reviewed?`<span class="badge badge-green">Reviewed</span>`:`<button class="action-btn action-approve" onclick="reviewReport(${r.id})">✓ Review</button>`}</td>`:""}
+    </tr>`).join("")||`<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-muted)">No reports yet</td></tr>`}
+    </tbody></table>
+  </div>`;
+}
+
+function handleReportFile(e){
+  const file=e.target.files[0]; if(!file)return;
+  reportFileName=file.name;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    reportFileData=ev.target.result.split(",")[1]; // base64 only
+    document.getElementById("fileLabel").textContent="File selected";
+    const prev=document.getElementById("filePreview");
+    document.getElementById("filePreviewName").textContent=file.name+" ("+Math.round(file.size/1024)+" KB)";
+    prev.style.display="flex";
+    showToast("File ready: "+file.name,"success");
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearReportFile(){
+  reportFileData=""; reportFileName="";
+  document.getElementById("rFileInput").value="";
+  document.getElementById("fileLabel").textContent="Click to choose file or drop here";
+  document.getElementById("filePreview").style.display="none";
+}
+
+function downloadReportFile(name, b64){
+  try{
+    const bytes=atob(b64);
+    const arr=new Uint8Array(bytes.length);
+    for(let i=0;i<bytes.length;i++) arr[i]=bytes.charCodeAt(i);
+    const blob=new Blob([arr]);
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; a.click();
+  }catch(e){showToast("Could not download file","error");}
+}
+
+async function submitReport(){
+  const title=document.getElementById("rTask")?.value.trim();
+  if(!title){showToast("Enter a task name","error");return;}
+  try{
+    await api("/reports","POST",{
+      title,
+      description:document.getElementById("rDesc")?.value||"",
+      file_name:reportFileName||"",
+      file_data:reportFileData||""
+    });
+    showToast("Report submitted!","success");
+    document.getElementById("rTask").value="";
+    document.getElementById("rDesc").value="";
+    clearReportFile();
+    renderReports();
+  }catch(e){showToast("Failed: "+e.message,"error");}
+}
+async function reviewReport(id){
+  try{await api("/reports/"+id,"PATCH");showToast("Report reviewed!","success");renderReports();}
+  catch(e){showToast("Failed","error");}
+}
+async function exportReports(){
+  try{
+    const data=await api("/reports");
+    if(!data.length){showToast("No reports to export","info");return;}
+    const csv=["ID,Title,Submitted By,Description,File,Reviewed,Date",...data.map(r=>`${r.id},"${r.title}","${r.submitted_by||""}","${(r.description||"").replace(/"/g,"'")}","${r.file_name||""}",${r.reviewed},${r.submitted_at?new Date(r.submitted_at).toLocaleDateString():""}`)].join("\n");
+    const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="reports.csv";a.click();
+    showToast("Reports exported!","success");
+  }catch(e){showToast("Export failed","error");}
+}
+
+// ════════════════════════════════════════════
+// PRODUCTIVITY
+// ════════════════════════════════════════════
+async function renderProductivity(){
+  // Show loading state
+  document.getElementById("mainContent").innerHTML=`
+  <div style="text-align:center;padding:60px;color:var(--text-muted)">
+    <div style="font-size:32px;margin-bottom:12px">📊</div>
+    <div style="font-size:14px">Loading productivity data...</div>
+  </div>`;
+
+  let stats=[];
+  try{
+    stats = await api("/productivity");
+  }catch(e){
+    document.getElementById("mainContent").innerHTML=`<div style="text-align:center;padding:60px;color:var(--red)">Failed to load productivity data. Make sure backend is running.</div>`;
+    return;
+  }
+
+  if(!stats.length){
+    document.getElementById("mainContent").innerHTML=`<div style="text-align:center;padding:60px;color:var(--text-muted)">No intern data yet. Assign tasks and mark attendance to see scores.</div>`;
+    return;
+  }
+
+  // Summary totals
+  const avgScore    = Math.round(stats.reduce((s,i)=>s+i.overall_score,0)/stats.length);
+  const totalDone   = stats.reduce((s,i)=>s+i.tasks_done,0);
+  const totalPres   = stats.reduce((s,i)=>s+i.present,0);
+  const top         = stats[0];
+
+  document.getElementById("mainContent").innerHTML=`
+
+  <!-- Summary cards -->
+  <div class="stats-grid" style="margin-bottom:20px">
+    <div class="stat-card green">
+      <div class="stat-icon green"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+      <div class="stat-value">${avgScore}%</div>
+      <div class="stat-label">Avg Team Score</div>
+    </div>
+    <div class="stat-card amber">
+      <div class="stat-icon amber"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+      <div class="stat-value">${totalDone}</div>
+      <div class="stat-label">Tasks Completed</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-icon blue"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+      <div class="stat-value">${totalPres}</div>
+      <div class="stat-label">Total Present Days</div>
+    </div>
+    <div class="stat-card purple">
+      <div class="stat-icon purple"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4 2 7L12 17l-6.5 3 2-7L2 9h7z"/></svg></div>
+      <div class="stat-value">${top?top.name.split(" ")[0]:"—"}</div>
+      <div class="stat-label">Top Performer ${top?"("+top.overall_score+"%)":""}</div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-row" style="margin-bottom:20px">
+    <div class="chart-card"><h3>Overall Score per Intern</h3><div class="chart-wrap"><canvas id="prodScoreChart"></canvas></div></div>
+    <div class="chart-card"><h3>Tasks Breakdown</h3><div class="chart-wrap"><canvas id="prodTaskChart"></canvas></div></div>
+  </div>
+
+  <!-- Detail table -->
+  <div class="table-card">
+    <div class="table-card-header">
+      <h3>Intern Performance Details</h3>
+      <button class="btn-sm btn-outline" onclick="exportProductivity()">↓ Export CSV</button>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Rank</th><th>Intern</th>
+        <th>Tasks Done/Total</th><th>Task Score</th>
+        <th>Attendance</th><th>Att. Score</th>
+        <th>Reports</th><th>Overall</th><th>Grade</th>
+      </tr></thead>
+      <tbody>
+      ${stats.map((s,idx)=>{
+        const col  = COLORS[idx%COLORS.length];
+        const gc   = s.overall_score>=80?"var(--green)":s.overall_score>=60?"var(--accent)":"var(--red)";
+        const ts_c = s.task_score>=80?"var(--green)":s.task_score>=50?"var(--accent)":"var(--red)";
+        const as_c = s.att_score>=80?"var(--green)":s.att_score>=50?"var(--accent)":"var(--red)";
+        const grade= s.overall_score>=90?"A+":s.overall_score>=80?"A":s.overall_score>=70?"B":s.overall_score>=60?"C":s.overall_score>=50?"D":"F";
+        return `<tr>
+          <td style="font-weight:700;color:${idx===0?"var(--accent)":idx===1?"var(--text-soft)":"var(--text-muted)"}">#${idx+1}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:32px;height:32px;border-radius:50%;background:${col}22;color:${col};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${s.name.slice(0,2).toUpperCase()}</div>
+              <div>
+                <div style="font-weight:600;font-size:13px">${s.name}</div>
+                <div style="font-size:11px;color:var(--text-muted)">${s.email}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div style="font-size:13px;font-weight:600">${s.tasks_done}/${s.tasks_total}</div>
+            <div style="font-size:11px;color:var(--text-muted)">${s.tasks_in_progress} in progress · ${s.tasks_pending} pending</div>
+          </td>
+          <td>
+            <div style="display:flex;align-items:center;gap:6px">
+              <div class="progress-bar" style="width:60px"><div class="progress-fill" style="width:${s.task_score}%;background:${ts_c}"></div></div>
+              <span style="font-size:12px;font-weight:700;color:${ts_c}">${s.task_score}%</span>
+            </div>
+          </td>
+          <td><span style="font-size:12px">✅${s.present} ❌${s.absent} 🌿${s.leave}</span></td>
+          <td>
+            <div style="display:flex;align-items:center;gap:6px">
+              <div class="progress-bar" style="width:60px"><div class="progress-fill" style="width:${s.att_score}%;background:${as_c}"></div></div>
+              <span style="font-size:12px;font-weight:700;color:${as_c}">${s.att_score}%</span>
+            </div>
+          </td>
+          <td style="font-size:13px"><strong>${s.reports_submitted}</strong> submitted · <span style="color:var(--green)">${s.reports_reviewed}</span> reviewed</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:6px">
+              <div class="progress-bar" style="width:70px"><div class="progress-fill" style="width:${s.overall_score}%;background:${gc}"></div></div>
+              <span style="font-size:13px;font-weight:700;color:${gc}">${s.overall_score}%</span>
+            </div>
+          </td>
+          <td><span style="font-size:20px;font-weight:800;color:${gc}">${grade}</span></td>
+        </tr>`;
+      }).join("")}
+      </tbody>
+    </table>
+  </div>`;
+
+  // Draw charts
+  setTimeout(()=>{
+    const names = stats.map(s=>s.name.split(" ")[0]);
+    chatCharts.prodScore = initChart("prodScoreChart","bar",names,[{
+      label:"Overall %",
+      data:stats.map(s=>s.overall_score),
+      backgroundColor:stats.map(s=>s.overall_score>=80?"rgba(16,185,129,0.8)":s.overall_score>=60?"rgba(245,158,11,0.8)":"rgba(239,68,68,0.8)"),
+      borderRadius:8, barThickness:32
+    }]);
+    chatCharts.prodTask = initChart("prodTaskChart","bar",names,[
+      {label:"Completed",   data:stats.map(s=>s.tasks_done),         backgroundColor:"rgba(16,185,129,0.8)",  borderRadius:4,barThickness:14},
+      {label:"In Progress", data:stats.map(s=>s.tasks_in_progress),  backgroundColor:"rgba(59,130,246,0.7)",  borderRadius:4,barThickness:14},
+      {label:"Pending",     data:stats.map(s=>s.tasks_pending),      backgroundColor:"rgba(245,158,11,0.5)", borderRadius:4,barThickness:14}
+    ]);
+  },80);
+}
+
+async function exportProductivity(){
+  let stats=[];
+  try{ stats=await api("/productivity"); }catch(e){ showToast("Failed to fetch data","error"); return; }
+  if(!stats.length){ showToast("No data to export","info"); return; }
+  const grade=s=>s>=90?"A+":s>=80?"A":s>=70?"B":s>=60?"C":s>=50?"D":"F";
+  const header="Rank,Name,Email,Role,Tasks Total,Tasks Done,In Progress,Pending,Task Score,Present,Absent,Leave,Att Score,Reports Submitted,Reports Reviewed,Overall Score,Grade";
+  const rows=stats.map((s,i)=>`${i+1},"${s.name}",${s.email},${s.role},${s.tasks_total},${s.tasks_done},${s.tasks_in_progress},${s.tasks_pending},${s.task_score}%,${s.present},${s.absent},${s.leave},${s.att_score}%,${s.reports_submitted},${s.reports_reviewed},${s.overall_score}%,${grade(s.overall_score)}`);
+  const csv=[header,...rows].join("\n");
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download="productivity_report.csv"; a.click();
+  showToast("Exported "+stats.length+" interns!","success");
+}
+
+
+// ════════════════════════════════════════════
+// CHAT
+// ════════════════════════════════════════════
+function renderChat(){
+  document.getElementById("mainContent").innerHTML=`
+  <div class="chat-layout">
+    <div class="chat-sidebar">
+      <div class="chat-sidebar-header">Messages</div>
+      <div class="chat-search"><input placeholder="Search..." id="chatSearchInput" oninput="filterChats(this.value)"></div>
+      <div class="chat-list" id="chatList"><div style="padding:16px;color:var(--text-muted);font-size:13px">Loading...</div></div>
+    </div>
+    <div class="chat-area" id="chatArea">
+      <div class="chat-header"><div class="chat-header-info"><div class="cn">Select a contact</div><div class="cs">to start chatting</div></div></div>
+      <div class="chat-messages" id="chatMsgs"></div>
+      <div class="chat-input-area">
+        <input class="chat-input" id="chatInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendMessage()">
+        <button class="send-btn" onclick="sendMessage()"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+      </div>
+    </div>
+  </div>`;
+  loadChatUsers();
+}
+function loadChatUsers(){
+  const list=document.getElementById("chatList");if(!list)return;
+  const others=allUsers.filter(u=>u.id!==currentUserId);
+  list.innerHTML=others.map((u,i)=>`
+  <div class="chat-contact" id="cc_${u.id}" onclick="openChatWithUser(${u.id},'${u.name}')">
+    <div class="cav" style="background:${COLORS[i%COLORS.length]}22;color:${COLORS[i%COLORS.length]};border-color:${COLORS[i%COLORS.length]}44">${u.name.slice(0,2).toUpperCase()}</div>
+    <div class="cinfo"><div class="cname">${u.name}</div><div class="clast">${roleLabel(u.role)}</div></div>
+  </div>`).join("")||`<div style="padding:16px;color:var(--text-muted)">No other users</div>`;
+}
+async function openChatWithUser(uid,name){
+  selectedReceiverId=uid;
+  document.querySelectorAll(".chat-contact").forEach(el=>el.classList.remove("active"));
+  const el=document.getElementById("cc_"+uid);if(el)el.classList.add("active");
+  const hdr=document.querySelector("#chatArea .chat-header");
+  if(hdr)hdr.innerHTML=`<div class="chat-header-info"><div class="cn">${name}</div><div class="cs">● Active now</div></div>`;
+  await fetchMessages(uid);
+}
+async function fetchMessages(uid){
+  try{
+    const msgs=await api("/messages/"+uid);
+    const box=document.getElementById("chatMsgs");if(!box)return;
+    box.innerHTML=msgs.map(m=>{
+      const isMe=m.sender_id===currentUserId;
+      return `<div class="msg ${isMe?"me":""}" id="msg_${m.id}" style="position:relative" onmouseenter="this.querySelector('.del-btn')&&(this.querySelector('.del-btn').style.opacity='1')" onmouseleave="this.querySelector('.del-btn')&&(this.querySelector('.del-btn').style.opacity='0')">
+        <div>
+          <div class="msg-bubble" style="position:relative">
+            ${m.message}
+            ${isMe||isAdmin()?`<button class="del-btn" onclick="deleteMessage(${m.id})" title="Delete message"
+              style="position:absolute;top:-8px;${isMe?"left":"right"}:-8px;background:var(--red);border:none;border-radius:50%;width:18px;height:18px;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;padding:0;line-height:1">✕</button>`:""}
+          </div>
+          <div class="msg-time">${m.sent_at?new Date(m.sent_at).toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"}):"now"}</div>
+        </div>
+      </div>`;
+    }).join("");
+    box.scrollTop=box.scrollHeight;
+  }catch(e){}
+}
+
+async function deleteMessage(msgId){
+  try{
+    await api("/messages/"+msgId,"DELETE");
+    const el=document.getElementById("msg_"+msgId);
+    if(el) el.remove();
+    showToast("Message deleted","info");
+  }catch(e){showToast("Failed: "+e.message,"error");}
+}
+async function sendMessage(){
+  const inp=document.getElementById("chatInput");if(!inp)return;
+  const message=inp.value.trim();
+  if(!message){showToast("Type a message","error");return;}
+  if(!selectedReceiverId){showToast("Select a contact first","error");return;}
+  try{await api("/send","POST",{receiver_id:selectedReceiverId,message});inp.value="";await fetchMessages(selectedReceiverId);}
+  catch(e){showToast("Failed to send","error");}
+}
+function filterChats(q){document.querySelectorAll(".chat-contact").forEach(el=>el.style.display=el.textContent.toLowerCase().includes(q.toLowerCase())?"":"none");}
+function connectWS(uid){
+  try{
+    ws=new WebSocket("ws://127.0.0.1:8000/ws/"+uid+"?token="+token);
+    ws.onmessage=async(e)=>{const m=JSON.parse(e.data);if(selectedReceiverId&&(m.sender_id===selectedReceiverId||m.receiver_id===selectedReceiverId))await fetchMessages(selectedReceiverId);};
+    ws.onerror=()=>console.log("WS not available, using polling");
+  }catch(e){}
+}
+setInterval(()=>{if(selectedReceiverId&&document.getElementById("chatMsgs"))fetchMessages(selectedReceiverId);},4000);
+
+// ════════════════════════════════════════════
+// GROUPS
+// ════════════════════════════════════════════
+async function renderGroups(){
+  // Load candidates to include approved ones
+  let candidates = [];
+  try{ candidates = await api("/candidates"); }catch(e){}
+  const approvedCandidates = candidates.filter(c=>c.status==="Approved");
+
+  // All assignable members = existing users (non-admin) + approved candidates not yet users
+  const existingEmails = allUsers.map(u=>u.email);
+  const allMembers = [
+    ...allUsers.filter(u=>u.role!=="admin"),
+    ...approvedCandidates.filter(c=>!existingEmails.includes(c.email)).map(c=>({
+      id: "c_"+c.id, name: c.name, email: c.email, role: "intern (approved candidate)"
+    }))
+  ];
+
+  document.getElementById("mainContent").innerHTML=`
+  ${canManage()?`
+  <div class="table-card" style="margin-bottom:16px">
+    <div class="table-card-header"><h3>Create New Group</h3></div>
+    <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <div class="field" style="margin:0;flex:1;min-width:140px"><label>Group Name</label><input id="gName" placeholder="e.g. Frontend Team"></div>
+        <div class="field" style="margin:0;flex:1;min-width:180px"><label>Description</label><input id="gDesc" placeholder="What is this group for?"></div>
+        <div class="field" style="margin:0;width:80px"><label>Icon</label><input id="gIcon" placeholder="💻"></div>
+      </div>
+
+      <!-- Searchable member selector -->
+      <div class="field" style="margin:0">
+        <label>Add Members <span style="color:var(--text-muted);font-weight:400;font-size:11px">(search and select)</span></label>
+        <input id="gMemberSearch" class="search-input" placeholder="🔍 Search by name or role..."
+          oninput="filterGroupMembers(this.value)"
+          style="width:100%;margin-bottom:8px;box-sizing:border-box">
+        <div id="gMemberDropdown" style="max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;background:var(--surface2)">
+          ${allMembers.map((u,i)=>`
+          <label style="display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border)" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background=''">
+            <input type="checkbox" class="gMemberCheck" value="${u.email}" style="accent-color:var(--accent);width:15px;height:15px;flex-shrink:0">
+            <div style="width:28px;height:28px;border-radius:50%;background:${COLORS[i%COLORS.length]}22;color:${COLORS[i%COLORS.length]};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${u.name.slice(0,2).toUpperCase()}</div>
+            <div>
+              <div style="font-size:13px;font-weight:600">${u.name}</div>
+              <div style="font-size:11px;color:var(--text-muted)">${u.role} · ${u.email}</div>
+            </div>
+          </label>`).join("")}
+        </div>
+        <!-- Selected tags shown here -->
+        <div id="gSelectedTags" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;min-height:0"></div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="action-btn action-approve" onclick="selectAllGroupMembers(true)">+ Select All</button>
+          <button class="action-btn action-reject" onclick="selectAllGroupMembers(false)">✕ Clear All</button>
+          <span id="gMemberCount" style="font-size:12px;color:var(--accent);padding:4px 0">0 selected</span>
+        </div>
+      </div>
+
+      <button class="btn-sm btn-accent" style="align-self:flex-start" onclick="createGroup()">+ Create Group</button>
+    </div>
+  </div>`:""}
+  <div class="groups-grid" id="groupsGrid"><div style="color:var(--text-muted)">Loading...</div></div>`;
+
+  // Initially hide all members — show only when typing
+  document.querySelectorAll("#gMemberDropdown label").forEach(l=>l.style.display="none");
+  document.getElementById("gMemberSearch").addEventListener("input", function(){
+    const q=this.value.trim().toLowerCase();
+    document.querySelectorAll("#gMemberDropdown label").forEach(l=>{
+      l.style.display=q&&l.textContent.toLowerCase().includes(q)?"":"none";
+    });
+  });
+
+  // Update member count on checkbox change
+  document.querySelectorAll(".gMemberCheck").forEach(cb=>{
+    cb.addEventListener("change",()=>{
+      const count=document.querySelectorAll(".gMemberCheck:checked").length;
+      const el=document.getElementById("gMemberCount");
+      if(el) el.textContent=count+" selected";
+      renderGroupSelectedTags();
+    });
+  });
+
+  await loadGroups();
+}
+
+function filterGroupMembers(q){
+  const query = q.trim().toLowerCase();
+  document.querySelectorAll("#gMemberDropdown label").forEach(label=>{
+    const text = label.textContent.toLowerCase();
+    // Only show if query is not empty AND text matches
+    label.style.display = (query && text.includes(query)) ? "" : "none";
+  });
+}
+
+function renderGroupSelectedTags(){
+  const bar=document.getElementById("gSelectedTags");
+  if(!bar) return;
+  const checked=Array.from(document.querySelectorAll(".gMemberCheck:checked"));
+  if(!checked.length){bar.innerHTML="";return;}
+  bar.innerHTML=checked.map((cb,idx)=>{
+    const email=cb.value;
+    const label=cb.closest("label");
+    const name=label?label.querySelector("div div:first-child")?.textContent.trim():email.split("@")[0];
+    const firstName=(name||email.split("@")[0]).split(" ")[0];
+    const col=COLORS[idx%COLORS.length];
+    return `<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;background:${col}18;border:1px solid ${col}44;color:${col};font-size:12px;font-weight:600;cursor:pointer"
+      onclick="document.querySelector('.gMemberCheck[value=\\'${email}\\']').checked=false;renderGroupSelectedTags();updateBulkGroupCount()"
+      title="Click to remove">
+      ${firstName} <span style="font-size:10px;opacity:0.6">✕</span>
+    </span>`;
+  }).join("");
+}
+
+function updateBulkGroupCount(){
+  const count=document.querySelectorAll(".gMemberCheck:checked").length;
+  const el=document.getElementById("gMemberCount");
+  if(el) el.textContent=count+" selected";
+}
+
+function selectAllGroupMembers(select){
+  document.querySelectorAll(".gMemberCheck").forEach(cb=>cb.checked=select);
+  const count=document.querySelectorAll(".gMemberCheck:checked").length;
+  const el=document.getElementById("gMemberCount");
+  if(el) el.textContent=count+" selected";
+  renderGroupSelectedTags();
+}
+
+async function loadGroups(){
+  try{
+    const data=await api("/groups");
+    const grid=document.getElementById("groupsGrid");if(!grid)return;
+    if(!data.length){grid.innerHTML=`<div style="color:var(--text-muted);padding:20px">No groups yet. Create one above!</div>`;return;}
+    grid.innerHTML=data.map((g,i)=>{
+      let members=[];
+      try{members=JSON.parse(g.members||"[]");}catch(e){}
+      const memberUsers=members.map(email=>allUsers.find(u=>u.email===email)).filter(Boolean);
+      return `<div class="group-card">
+        <div class="group-icon" style="background:${COLORS[i%COLORS.length]}18">${g.icon||"📁"}</div>
+        <h4>${g.name}</h4>
+        <p style="color:var(--text-muted);font-size:12.5px">${g.description||""}</p>
+        <div style="margin:10px 0;display:flex;flex-wrap:wrap;gap:4px">
+          ${memberUsers.length?memberUsers.map(u=>`<span style="font-size:11px;padding:2px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--text-soft)">${u.name.split(" ")[0]}</span>`).join(""):`<span style="font-size:11px;color:var(--text-muted)">No members yet</span>`}
+        </div>
+        <div class="group-meta" style="margin-top:8px">
+          <span style="font-size:12px;color:var(--text-muted)">${memberUsers.length} member${memberUsers.length!==1?"s":""}</span>
+          ${canManage()?`<div style="display:flex;gap:4px">
+            <button class="action-btn action-edit" onclick="openManageMembers(${g.id},'${g.name}',${JSON.stringify(members).replace(/"/g,"&quot;")})">👥 Members</button>
+            ${isAdmin()?`<button class="action-btn action-reject" onclick="deleteGroup(${g.id})">🗑</button>`:""}
+          </div>`:""}
+        </div>
+      </div>`;
+    }).join("");
+  }catch(e){showToast("Failed to load groups","error");}
+}
+
+// ── GROUP MEMBER MANAGER ─────────────────────
+let gmGroupId=null, gmAdded=[], gmAll=[];
+
+function openManageMembers(gid, gname, currentMembers){
+  gmGroupId=gid;
+  gmAdded=[...currentMembers];
+  // Include all users + approved candidates
+  gmAll=allUsers.filter(u=>u.role!=="admin");
+
+  const ex=document.getElementById("manageMembersModal");
+  if(ex)ex.remove();
+
+  const modal=document.createElement("div");
+  modal.id="manageMembersModal";
+  modal.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:1000;padding:16px";
+  modal.innerHTML=`
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:500px;box-shadow:0 24px 64px rgba(0,0,0,0.5);display:flex;flex-direction:column;max-height:88vh">
+
+    <!-- Header -->
+    <div style="padding:18px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <div>
+        <h3 style="font-size:15px;font-weight:700;margin:0">👥 ${gname} — Members</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin:3px 0 0">Search and add members. Click tag to remove.</p>
+      </div>
+      <button onclick="document.getElementById('manageMembersModal').remove()" style="background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer">✕</button>
+    </div>
+
+    <!-- Added members tag bar -->
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:8px">
+        Added Members — <span id="gmCount" style="color:var(--accent)">0</span>
+        <button onclick="gmRemoveAll()" style="float:right;background:none;border:none;color:var(--red);font-size:11px;cursor:pointer;font-weight:600">✕ Clear all</button>
+      </div>
+      <div id="gmTagBar" style="display:flex;flex-wrap:wrap;gap:4px;min-height:36px;padding:4px 0">
+        <span style="color:var(--text-muted);font-size:12px;padding:4px 0">No members added yet</span>
+      </div>
+    </div>
+
+    <!-- Search box -->
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0">
+      <div style="position:relative">
+        <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none">🔍</span>
+        <input id="gmSearch" placeholder="Search by name, email or role..." oninput="gmFilter(this.value)"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px 9px 34px;color:var(--text);font-size:13px;box-sizing:border-box">
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+        <button class="action-btn action-approve" onclick="gmAddFiltered()" style="font-size:11.5px">+ Add all results</button>
+        <button class="action-btn action-approve" onclick="gmAddAll()" style="font-size:11.5px">+ Add everyone</button>
+      </div>
+    </div>
+
+    <!-- User list -->
+    <div id="gmAvailList" style="overflow-y:auto;flex:1;padding:8px 12px"></div>
+
+    <!-- Footer -->
+    <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0">
+      <button class="btn-sm btn-outline" onclick="document.getElementById('manageMembersModal').remove()">Cancel</button>
+      <button class="btn-sm btn-accent" onclick="saveGroupMembers()">✓ Save Members</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  gmRender();
+}
+
+function gmRenderTags(){
+  const bar=document.getElementById("gmTagBar");
+  const count=document.getElementById("gmCount");
+  if(!bar) return;
+  count.textContent=gmAdded.length;
+  if(!gmAdded.length){
+    bar.innerHTML=`<span style="color:var(--text-muted);font-size:12px;padding:4px 0">No members added yet</span>`;
+    return;
+  }
+  bar.innerHTML=gmAdded.map((email,idx)=>{
+    const u=gmAll.find(u=>u.email===email);
+    const name=u?u.name:email.split("@")[0];
+    const firstName=name.split(" ")[0];
+    const col=COLORS[idx%COLORS.length];
+    return `<span onclick="gmRemove('${email}')" title="Click to remove ${name}"
+      style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;background:${col}18;border:1px solid ${col}44;color:${col};font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;margin:2px"
+      onmouseover="this.style.background='${col}33';this.style.borderColor='${col}88'"
+      onmouseout="this.style.background='${col}18';this.style.borderColor='${col}44'">
+      <span style="width:20px;height:20px;border-radius:50%;background:${col}33;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:800">${firstName.slice(0,2).toUpperCase()}</span>
+      ${firstName}
+      <span style="font-size:11px;opacity:0.6">✕</span>
+    </span>`;
+  }).join("");
+}
+
+function gmRenderList(query=""){
+  const avail=document.getElementById("gmAvailList");
+  if(!avail) return;
+  const q=query.toLowerCase();
+  const filtered=gmAll.filter(u=>
+    (!q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || u.role.toLowerCase().includes(q))
+  );
+  if(!filtered.length){
+    avail.innerHTML=`<div style="text-align:center;padding:30px;color:var(--text-muted);font-size:13px">No users match "${query}"</div>`;
+    return;
+  }
+  avail.innerHTML=filtered.map((u,i)=>{
+    const isAdded=gmAdded.includes(u.email);
+    const col=COLORS[gmAll.indexOf(u)%COLORS.length];
+    return `<div onclick="${isAdded?`gmRemove('${u.email}')`:`gmAdd('${u.email}')`}"
+      style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;cursor:pointer;margin-bottom:3px;transition:background .15s;border:1px solid ${isAdded?col+'44':'transparent'};background:${isAdded?col+'0d':'transparent'}"
+      onmouseover="this.style.background='${isAdded?col+'1a':'rgba(255,255,255,0.04)'}'"
+      onmouseout="this.style.background='${isAdded?col+'0d':'transparent'}'">
+      <div style="width:36px;height:36px;border-radius:50%;background:${col}22;color:${col};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${u.name.slice(0,2).toUpperCase()}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600">${u.name}</div>
+        <div style="font-size:11.5px;color:var(--text-muted)">${u.email} · ${u.role}</div>
+      </div>
+      <div style="font-size:13px;font-weight:700;flex-shrink:0;width:24px;text-align:center;color:${isAdded?'var(--red)':'var(--green)'}">${isAdded?'✕':'+'}</div>
+    </div>`;
+  }).join("");
+}
+
+function gmRender(q=""){ gmRenderTags(); gmRenderList(q); }
+function gmFilter(q){ gmRenderList(q.toLowerCase()); }
+function gmAdd(email){ if(!gmAdded.includes(email)) gmAdded.push(email); gmRender(document.getElementById("gmSearch")?.value||""); }
+function gmRemove(email){ gmAdded=gmAdded.filter(e=>e!==email); gmRender(document.getElementById("gmSearch")?.value||""); }
+function gmAddAll(){ gmAll.forEach(u=>{if(!gmAdded.includes(u.email))gmAdded.push(u.email);}); gmRender(); }
+function gmRemoveAll(){ gmAdded=[]; gmRender(); }
+function gmAddFiltered(){
+  const q=(document.getElementById("gmSearch")?.value||"").toLowerCase();
+  gmAll.filter(u=>u.name.toLowerCase().includes(q)||u.email.toLowerCase().includes(q)||u.role.toLowerCase().includes(q)).forEach(u=>{if(!gmAdded.includes(u.email))gmAdded.push(u.email);});
+  gmRender(q);
+}
+
+async function saveGroupMembers(){
+  try{
+    await api("/groups/"+gmGroupId+"/members","PATCH",{members:gmAdded});
+    showToast("Saved! "+gmAdded.length+" members in group","success");
+    document.getElementById("manageMembersModal").remove();
+    await loadGroups();
+  }catch(e){showToast("Failed: "+e.message,"error");}
+}
+
+async function createGroup(){
+  const name=document.getElementById("gName")?.value.trim();
+  if(!name){showToast("Enter a group name","error");return;}
+  const checks=document.querySelectorAll(".gMemberCheck:checked");
+  const members=Array.from(checks).map(cb=>cb.value);
+  try{
+    await api("/groups","POST",{name,description:document.getElementById("gDesc")?.value||"",icon:document.getElementById("gIcon")?.value||"📁",members:JSON.stringify(members)});
+    showToast("Group created with "+members.length+" members!","success");
+    document.getElementById("gName").value="";
+    document.getElementById("gDesc").value="";
+    document.getElementById("gIcon").value="";
+    await loadGroups();
+  }catch(e){showToast("Failed: "+e.message,"error");}
+}
+async function deleteGroup(id){
+  if(!confirm("Delete this group?"))return;
+  try{await api("/groups/"+id,"DELETE");showToast("Group deleted","error");loadGroups();}
+  catch(e){showToast("Failed","error");}
+}
+
+// ════════════════════════════════════════════
+// MEETINGS
+// ════════════════════════════════════════════
+async function renderMeetings(){
+  let data=[];
+  try{data=await api("/meetings");}catch(e){showToast("Failed","error");}
+
+  // Inject meeting modal dynamically
+  const ex=document.getElementById("meetModalDyn");if(ex)ex.remove();
+  if(canManage()){
+    const mel=document.createElement("div");
+    mel.innerHTML=`<div class="modal-overlay hidden" id="meetModalDyn" onclick="if(event.target===this)closeModal('meetModalDyn')">
+      <div class="modal" style="max-width:520px">
+        <h3>📅 Schedule Meeting</h3>
+        <div class="field"><label>Title</label><input id="mTitle" placeholder="e.g. Sprint Planning"></div>
+        <div class="field"><label>Description</label><textarea id="mDesc" placeholder="What is this meeting about?"></textarea></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="field"><label>Date</label><input type="date" id="mDate"></div>
+          <div class="field"><label>Time</label><input type="time" id="mTime"></div>
+        </div>
+        <div class="field"><label>Google Meet Link</label><input id="mLink" placeholder="https://meet.google.com/..."></div>
+        <div class="field">
+          <label>Invite Members <span style="color:var(--text-muted);font-weight:400">(notifications sent automatically)</span></label>
+          <div style="display:flex;gap:6px;margin-bottom:6px">
+            <button class="action-btn action-approve" style="font-size:11px" onclick="toggleAllMeetMembers(true)">Select All</button>
+            <button class="action-btn action-reject" style="font-size:11px" onclick="toggleAllMeetMembers(false)">Clear All</button>
+          </div>
+          <div id="mMemberChecks" style="display:flex;flex-direction:column;gap:5px;max-height:160px;overflow-y:auto;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px">
+            ${allUsers.filter(u=>u.role!=="admin").map(u=>`
+            <label style="display:flex;align-items:center;gap:8px;padding:5px 8px;cursor:pointer;border-radius:6px;font-size:13px">
+              <input type="checkbox" value="${u.email}" style="accent-color:var(--accent);width:15px;height:15px">
+              <span>${u.name}</span><span style="font-size:11px;color:var(--text-muted);margin-left:auto">${u.role}</span>
+            </label>`).join("")}
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-sm btn-outline" onclick="closeModal('meetModalDyn')">Cancel</button>
+          <button class="btn-sm btn-accent" onclick="createMeeting()">📅 Schedule & Notify</button>
+        </div>
+      </div>
+    </div>`;
+    document.body.appendChild(mel.firstElementChild);
+  }
+
+  document.getElementById("mainContent").innerHTML=`
+  ${canManage()?`<div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+    <button class="btn-sm btn-accent" onclick="openModal('meetModalDyn');document.getElementById('mDate').value=new Date().toISOString().split('T')[0]">+ Schedule Meeting</button>
+  </div>`:""}
+  <div class="meetings-list">
+  ${data.map(m=>{
+    const d=new Date(m.date+"T00:00:00"||Date.now());
+    let members=[];
+    try{members=JSON.parse(m.members||"[]");}catch(e){}
+    const memberNames=members.map(email=>{const u=allUsers.find(u=>u.email===email);return u?u.name.split(" ")[0]:email.split("@")[0];});
+    if(!m||!m.title)return ''; return `<div class="meet-card">
+      <div class="meet-time"><div class="mdate">${d.getDate()}</div><div class="mmon">${d.toLocaleString("en",{month:"short"})}</div></div>
+      <div class="meet-divider"></div>
+      <div class="meet-info">
+        <h4>${m.title}</h4>
+        <p>🕐 ${m.time||"TBD"} · by ${m.created_by?m.created_by.split("@")[0]:"admin"}</p>
+        ${m.description?`<p style="font-size:12px;color:var(--text-muted)">${m.description}</p>`:""}
+        ${memberNames.length?`<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">
+          <span style="font-size:11px;color:var(--text-muted)">👥</span>
+          ${memberNames.map(n=>`<span style="font-size:11px;padding:2px 7px;background:var(--surface2);border:1px solid var(--border);border-radius:20px">${n}</span>`).join("")}
+        </div>`:""}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+        ${m.meet_link?`<a class="meet-link" href="${m.meet_link}" target="_blank">🎥 Join</a>`:""}
+        ${isAdmin()?`<button class="action-btn action-reject" onclick="deleteMeeting(${m.id})">🗑</button>`:""}
+      </div>
+    </div>`;
+  }).join("")||`<div style="text-align:center;padding:40px;color:var(--text-muted)">No meetings scheduled</div>`}
+  </div>`;
+}
+
+function toggleAllMeetMembers(check){
+  document.querySelectorAll("#mMemberChecks input[type=checkbox]").forEach(cb=>cb.checked=check);
+}
+
+async function createMeeting(){
+  const title=document.getElementById("mTitle")?.value.trim();
+  if(!title){showToast("Enter a meeting title","error");return;}
+  const checks=document.querySelectorAll("#mMemberChecks input[type=checkbox]:checked");
+  const members=JSON.stringify(Array.from(checks).map(cb=>cb.value));
+  const inviteCount=checks.length;
+  try{
+    await api("/meetings","POST",{
+      title,
+      description:document.getElementById("mDesc")?.value||"",
+      date:document.getElementById("mDate")?.value||new Date().toISOString().split("T")[0],
+      time:document.getElementById("mTime")?.value||"TBD",
+      meet_link:document.getElementById("mLink")?.value||"",
+      members
+    });
+    closeModal("meetModalDyn");
+    showToast("Meeting scheduled! "+inviteCount+" member"+(inviteCount!==1?"s":"")+" notified 🔔","success");
+    renderMeetings();
+  }catch(e){showToast("Failed: "+e.message,"error");}
+}
+async function deleteMeeting(id){
+  try{await api("/meetings/"+id,"DELETE");showToast("Meeting deleted","error");renderMeetings();}
+  catch(e){showToast("Failed","error");}
+}
+
+// ════════════════════════════════════════════
+// NOTIFICATIONS
+// ════════════════════════════════════════════
+async function renderNotifications(){
+  let data=[];
+  try{data=await api("/notifications");}catch(e){}
+  document.getElementById("mainContent").innerHTML=`
+  ${canManage()?`
+  <div class="table-card" style="margin-bottom:16px">
+    <div class="table-card-header"><h3>📣 Send Notification</h3></div>
+    <div style="padding:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+      <div class="field" style="margin:0;flex:1;min-width:160px"><label>Title</label><input id="nTitle" placeholder="Notification title"></div>
+      <div class="field" style="margin:0;flex:2;min-width:200px"><label>Message</label><input id="nBody" placeholder="Write your message here..."></div>
+      <div class="field" style="margin:0;width:70px"><label>Icon</label><input id="nIcon" placeholder="🔔" value="🔔"></div>
+      <div class="field" style="margin:0;min-width:180px">
+        <label>Send To</label>
+        <select id="nTarget" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px">
+          <option value="ALL">📢 Everyone</option>
+          ${allUsers.filter(u=>u.role!=="admin").map(u=>`<option value="${u.email}">${u.name} (${u.role})</option>`).join("")}
+        </select>
+      </div>
+      <button class="btn-sm btn-accent" style="align-self:flex-end;height:36px" onclick="sendNotification()">🔔 Send</button>
+    </div>
+  </div>`:""}
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <span style="font-size:13.5px;color:var(--text-muted)">${data.filter(n=>!n.read).length} unread · ${data.length} total</span>
+    <button class="btn-sm btn-outline" onclick="markAllRead()">✓ Mark all read</button>
+  </div>
+  <div class="notif-list">
+  ${data.map(n=>{
+    let seenList=[];
+    try{seenList=JSON.parse(n.seen_by||"[]");}catch(e){}
+    const seenNames=seenList.map(email=>{const u=allUsers.find(u=>u.email===email);return u?u.name.split(" ")[0]:email.split("@")[0];});
+    return `<div class="notif-item ${n.read?"":"unread"}">
+      <div class="notif-icon" style="background:rgba(245,158,11,0.12)">${n.icon||"🔔"}</div>
+      <div class="notif-body" style="flex:1">
+        <h5>${n.title}</h5>
+        <p>${n.body||""}</p>
+        <div class="notif-time">${n.created_at?new Date(n.created_at).toLocaleString("en-IN"):"now"}</div>
+        ${canManage()?seenList.length?`
+        <div style="margin-top:6px;display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+          <span style="font-size:11px;color:var(--text-muted)">👁 Seen by (${seenList.length}):</span>
+          ${seenNames.map(name=>`<span style="font-size:11px;padding:2px 7px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);border-radius:20px;color:var(--green)">${name}</span>`).join("")}
+        </div>`:`<div style="margin-top:4px;font-size:11px;color:var(--text-muted)">👁 Not seen by anyone yet</div>`:""}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+        ${!n.read?`<button class="action-btn action-approve" onclick="markRead(${n.id})">✓ Read</button>`:""}
+        ${canManage()?`<button class="action-btn action-reject" onclick="deleteNotif(${n.id})">🗑</button>`:""}
+      </div>
+    </div>`;
+  }).join("")||`<div style="text-align:center;padding:40px;color:var(--text-muted)">No notifications yet</div>`}
+  </div>`;
+}
+
+async function sendNotification(){
+  const title=document.getElementById("nTitle")?.value.trim();
+  if(!title){showToast("Enter a notification title","error");return;}
+  const body=document.getElementById("nBody")?.value||"";
+  const icon=document.getElementById("nIcon")?.value||"🔔";
+  const target=document.getElementById("nTarget")?.value||"ALL";
+  try{
+    await api("/notifications","POST",{title,body,icon,target_email:target});
+    showToast("Notification sent to "+(target==="ALL"?"everyone":target.split("@")[0])+" 🔔","success");
+    document.getElementById("nTitle").value="";
+    document.getElementById("nBody").value="";
+    renderNotifications();
+  }catch(e){showToast("Failed: "+e.message,"error");}
+}
+
+async function markRead(id){
+  try{await api("/notifications/"+id+"/read","PATCH");renderNotifications();}catch(e){}
+}
+async function markAllRead(){
+  try{
+    const data=await api("/notifications");
+    await Promise.all(data.filter(n=>!n.read).map(n=>api("/notifications/"+n.id+"/read","PATCH")));
+    showToast("All marked as read","info");renderNotifications();
+  }catch(e){}
+}
+async function deleteNotif(id){
+  try{await api("/notifications/"+id,"DELETE");renderNotifications();}
+  catch(e){showToast("Failed","error");}
+}
+
+// ════════════════════════════════════════════
+// CALENDAR
+// ════════════════════════════════════════════
+async function renderCalendar(){
+  // Fetch all events from backend
+  let meetings=[], tasks=[], candidates=[];
+  try{
+    [meetings, tasks, candidates] = await Promise.all([
+      api("/meetings"),
+      api("/tasks"),
+      isAdmin()||isSuperAdmin() ? api("/candidates") : Promise.resolve([])
+    ]);
+  }catch(e){}
+
+  // Build event map: "YYYY-MM-DD" -> [{type, label, color}]
+  const events = {};
+  const addEvent = (date, type, label, color) => {
+    if(!date) return;
+    const key = date.slice(0,10);
+    if(!events[key]) events[key] = [];
+    events[key].push({type, label, color});
+  };
+
+  meetings.forEach(m => addEvent(m.date, "meeting", "📅 "+m.title, "#f59e0b"));
+  tasks.forEach(t => { if(t.deadline && t.deadline!=="TBD") addEvent(t.deadline, "task", "📋 "+t.title, t.status==="Completed"?"#10b981":t.priority==="High"?"#ef4444":"#3b82f6"); });
+  candidates.filter(c=>c.status==="Approved").forEach(c => { if(c.applied_at) addEvent(c.applied_at.slice(0,10), "candidate", "✅ "+c.name+" joined", "#10b981"); });
+
+  const y=calDate.getFullYear(), m=calDate.getMonth();
+  const monthName=calDate.toLocaleString("en",{month:"long",year:"numeric"});
+  const firstDay=new Date(y,m,1).getDay(), daysInMonth=new Date(y,m+1,0).getDate();
+  const today=new Date();
+
+  let cells="";
+  for(let i=0;i<firstDay;i++) cells+=`<div class="cal-day empty"></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const isToday = d===today.getDate()&&m===today.getMonth()&&y===today.getFullYear();
+    const dateKey = `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const dayEvents = events[dateKey]||[];
+    const dots = dayEvents.slice(0,3).map(e=>`<div style="width:6px;height:6px;border-radius:50%;background:${e.color};flex-shrink:0"></div>`).join("");
+    const eventList = dayEvents.map(e=>`<div style="font-size:9.5px;padding:1px 4px;border-radius:4px;background:${e.color}22;color:${e.color};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;margin-top:1px">${e.label}</div>`).join("");
+    cells+=`
+    <div class="cal-day ${isToday?"today":""} ${dayEvents.length?"has-events":""}" style="cursor:${dayEvents.length?"pointer":"default"};${dayEvents.length?"background:rgba(245,158,11,0.04)":""}" ${dayEvents.length?`onclick="showCalDayEvents('${dateKey}',${JSON.stringify(dayEvents).replace(/"/g,'&quot;')})"`:""}>
+      <div class="cal-date" style="${isToday?"color:var(--accent);font-weight:800":""}">${d}</div>
+      <div style="display:flex;gap:2px;flex-wrap:wrap;margin-top:2px">${dots}</div>
+      <div style="margin-top:2px">${eventList}</div>
+    </div>`;
+  }
+
+  // Upcoming events list
+  const now = new Date();
+  const upcoming = Object.entries(events)
+    .filter(([k])=>new Date(k)>=new Date(now.toISOString().slice(0,10)))
+    .sort(([a],[b])=>a.localeCompare(b))
+    .slice(0,8);
+
+  document.getElementById("mainContent").innerHTML=`
+  <div style="display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start">
+
+    <!-- Calendar -->
+    <div class="chart-card" style="padding:20px">
+      <div class="cal-controls">
+        <div class="cal-month">${monthName}</div>
+        <div class="cal-nav">
+          <button onclick="renderCalendar_prev()">‹</button>
+          <button onclick="calDate=new Date();renderCalendar()" style="font-size:11px;padding:4px 10px">Today</button>
+          <button onclick="renderCalendar_next()">›</button>
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+        <span style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--text-muted)"><span style="width:8px;height:8px;border-radius:50%;background:#f59e0b;display:inline-block"></span>Meeting</span>
+        <span style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--text-muted)"><span style="width:8px;height:8px;border-radius:50%;background:#3b82f6;display:inline-block"></span>Task Deadline</span>
+        <span style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--text-muted)"><span style="width:8px;height:8px;border-radius:50%;background:#ef4444;display:inline-block"></span>High Priority</span>
+        <span style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--text-muted)"><span style="width:8px;height:8px;border-radius:50%;background:#10b981;display:inline-block"></span>Completed/Joined</span>
+      </div>
+
+      <div class="cal-grid" style="grid-template-columns:repeat(7,1fr)">
+        ${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d=>`<div class="cal-day-header">${d}</div>`).join("")}
+        ${cells}
+      </div>
+    </div>
+
+    <!-- Upcoming events sidebar -->
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="chart-card" style="padding:16px">
+        <h3 style="font-size:13px;font-weight:700;margin-bottom:14px;color:var(--text)">📆 Upcoming Events</h3>
+        ${upcoming.length ? upcoming.map(([date,evts])=>`
+        <div style="margin-bottom:12px">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:5px">
+            ${new Date(date+"T00:00:00").toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short"})}
+          </div>
+          ${evts.map(e=>`
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;background:${e.color}10;border-left:3px solid ${e.color};margin-bottom:3px">
+            <div style="font-size:12px;color:${e.color};flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.label}</div>
+          </div>`).join("")}
+        </div>`).join("") : `<div style="color:var(--text-muted);font-size:12.5px;text-align:center;padding:20px">No upcoming events</div>`}
+      </div>
+
+      <!-- Stats -->
+      <div class="chart-card" style="padding:16px">
+        <h3 style="font-size:13px;font-weight:700;margin-bottom:12px">This Month</h3>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:12.5px;color:var(--text-muted)">📅 Meetings</span>
+            <span style="font-weight:700;color:var(--accent)">${meetings.filter(m=>m.date&&m.date.startsWith(y+"-"+String(m+1).padStart(2,"0"))).length}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:12.5px;color:var(--text-muted)">📋 Task Deadlines</span>
+            <span style="font-weight:700;color:#3b82f6">${tasks.filter(t=>t.deadline&&t.deadline.startsWith(y+"-"+String(m+1).padStart(2,"0"))).length}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:12.5px;color:var(--text-muted)">✅ Completed Tasks</span>
+            <span style="font-weight:700;color:#10b981">${tasks.filter(t=>t.status==="Completed").length}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Day event popup placeholder -->
+  <div id="calDayPopup"></div>`;
+}
+
+function renderCalendar_prev(){ calDate.setMonth(calDate.getMonth()-1); renderCalendar(); }
+function renderCalendar_next(){ calDate.setMonth(calDate.getMonth()+1); renderCalendar(); }
+function changeMonth(d){ calDate.setMonth(calDate.getMonth()+d); renderCalendar(); }
+
+function showCalDayEvents(date, eventsJson){
+  const evts = typeof eventsJson === "string" ? JSON.parse(eventsJson.replace(/&quot;/g,'"')) : eventsJson;
+  const popup = document.getElementById("calDayPopup");
+  if(!popup) return;
+  const label = new Date(date+"T00:00:00").toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+  popup.innerHTML=`
+  <div style="position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)this.innerHTML=''">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;max-width:360px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.4)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="font-size:14px;font-weight:700">${label}</div>
+        <button onclick="document.getElementById('calDayPopup').innerHTML=''" style="background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer">✕</button>
+      </div>
+      ${evts.map(e=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;background:${e.color}12;border:1px solid ${e.color}30;margin-bottom:8px">
+        <div style="width:10px;height:10px;border-radius:50%;background:${e.color};flex-shrink:0"></div>
+        <div style="font-size:13px;color:${e.color};font-weight:600">${e.label}</div>
+      </div>`).join("")}
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════
+// MY TASKS (intern kanban)
+// ════════════════════════════════════════════
+async function renderMyTasks(){
+  let data=[];
+  try{data=await api("/tasks");}catch(e){}
+  const pending=data.filter(t=>t.status==="Pending");
+  const inProg=data.filter(t=>t.status==="In Progress");
+  const done=data.filter(t=>t.status==="Completed");
+  function card(t){return `<div class="task-card"><h5>${t.title}</h5><p>${t.description||""}</p>
+    <div class="task-card-meta">${prioritySpan(t.priority)}<span class="task-due">📅 ${t.deadline||"TBD"}</span></div>
+    <div style="margin-top:10px"><select style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:6px 10px;color:var(--text);font-size:12.5px" onchange="updateTaskStatus(${t.id},this.value);setTimeout(renderMyTasks,600)">
+      ${["Pending","In Progress","Completed"].map(s=>`<option ${t.status===s?"selected":""}>${s}</option>`).join("")}
+    </select></div></div>`;}
+  document.getElementById("mainContent").innerHTML=`
+  <div class="task-kanban">
+    <div class="kanban-col"><div class="kanban-header" style="border-top:2px solid var(--accent)">Pending <span class="kanban-count">${pending.length}</span></div><div class="kanban-body">${pending.map(card).join("")||`<div style="padding:16px;color:var(--text-muted);font-size:12px">No pending tasks</div>`}</div></div>
+    <div class="kanban-col"><div class="kanban-header" style="border-top:2px solid var(--blue)">In Progress <span class="kanban-count">${inProg.length}</span></div><div class="kanban-body">${inProg.map(card).join("")||`<div style="padding:16px;color:var(--text-muted);font-size:12px">None in progress</div>`}</div></div>
+    <div class="kanban-col"><div class="kanban-header" style="border-top:2px solid var(--green)">Completed <span class="kanban-count">${done.length}</span></div><div class="kanban-body">${done.map(card).join("")||`<div style="padding:16px;color:var(--text-muted);font-size:12px">None completed yet</div>`}</div></div>
+  </div>`;
+}
+
+
+// ════════════════════════════════════════════
+// EMAIL SETTINGS PAGE
+// ════════════════════════════════════════════
+async function renderSettings(){
+  const savedSvc  = localStorage.getItem("ejs_service")  || "";
+  const savedTpl  = localStorage.getItem("ejs_template") || "";
+  const savedKey  = localStorage.getItem("ejs_pubkey")   || "";
+  const configured = savedSvc && savedTpl && savedKey;
+
+  document.getElementById("mainContent").innerHTML=`
+  <!-- EmailJS Config -->
+  <div class="table-card" style="max-width:620px;margin-bottom:20px">
+    <div class="table-card-header">
+      <h3>📧 Email Setup (EmailJS)</h3>
+      <span class="badge ${configured?"badge-green":"badge-red"}">${configured?"✅ Configured":"❌ Not Set"}</span>
+    </div>
+    <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+
+      <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:10px;padding:14px;font-size:13px;line-height:1.9">
+        <strong style="color:var(--accent)">Setup Steps (2 minutes, completely free):</strong><br>
+        1. Go to <a href="https://www.emailjs.com" target="_blank" style="color:var(--accent)">emailjs.com</a> → Sign Up Free (use your Gmail)<br>
+        2. <strong>Email Services</strong> → Add New Service → Gmail → Connect → Copy <strong>Service ID</strong><br>
+        3. <strong>Email Templates</strong> → Create New → set Subject: <code>{{subject}}</code>, Body: <code>{{message}}</code>, To: <code>{{to_email}}</code> → Save → Copy <strong>Template ID</strong><br>
+        4. <strong>Account</strong> → API Keys → Copy <strong>Public Key</strong>
+      </div>
+
+      <div class="field">
+        <label>Service ID <span style="color:var(--text-muted);font-size:11px">e.g. service_abc123</span></label>
+        <input id="ejsService" placeholder="service_xxxxxxx" value="${savedSvc}"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;box-sizing:border-box">
+      </div>
+      <div class="field">
+        <label>Template ID <span style="color:var(--text-muted);font-size:11px">e.g. template_abc123</span></label>
+        <input id="ejsTemplate" placeholder="template_xxxxxxx" value="${savedTpl}"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;box-sizing:border-box">
+      </div>
+      <div class="field">
+        <label>Public Key <span style="color:var(--text-muted);font-size:11px">e.g. aBcDeFgHiJkLmNoP</span></label>
+        <input id="ejsKey" placeholder="your public key" value="${savedKey}"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;box-sizing:border-box">
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn-sm btn-accent" onclick="saveEmailJSConfig()">💾 Save Config</button>
+        <button class="btn-sm btn-outline" onclick="testEmailJS()">📤 Send Test Email</button>
+      </div>
+      <div id="cfgStatus" style="font-size:13px"></div>
+    </div>
+  </div>
+
+  <!-- Send Email Card -->
+  <div class="table-card" style="max-width:620px">
+    <div class="table-card-header"><h3>📨 Send Email to Candidate</h3></div>
+    <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+      <div class="field">
+        <label>Recipient Email</label>
+        <input id="mailTo" type="email" placeholder="candidate@gmail.com"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;box-sizing:border-box">
+      </div>
+      <div class="field">
+        <label>Recipient Name</label>
+        <input id="mailName" placeholder="e.g. Rahul Sharma"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;box-sizing:border-box">
+      </div>
+      <div class="field">
+        <label>Subject</label>
+        <input id="mailSubject" placeholder="e.g. Your Application Status"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;box-sizing:border-box">
+      </div>
+      <div class="field">
+        <label>Message</label>
+        <textarea id="mailBody" rows="6" placeholder="Write your message here..."
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;box-sizing:border-box;resize:vertical"></textarea>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:8px">Quick Templates</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="action-btn action-approve" onclick="useTemplate('welcome')">🎉 Welcome</button>
+          <button class="action-btn action-approve" onclick="useTemplate('interview')">📅 Interview Invite</button>
+          <button class="action-btn action-edit" onclick="useTemplate('followup')">🔔 Follow Up</button>
+          <button class="action-btn action-reject" onclick="useTemplate('reject')">❌ Rejection</button>
+        </div>
+      </div>
+      <button class="btn-sm btn-accent" onclick="sendCustomEmail()" style="align-self:flex-start">📤 Send Email</button>
+      <div id="mailStatus" style="font-size:13px"></div>
+    </div>
+  </div>`;
+}
+
+function saveEmailJSConfig(){
+  const svc = document.getElementById("ejsService")?.value.trim();
+  const tpl = document.getElementById("ejsTemplate")?.value.trim();
+  const key = document.getElementById("ejsKey")?.value.trim();
+  if(!svc||!tpl||!key){ showToast("Fill all 3 fields","error"); return; }
+  localStorage.setItem("ejs_service", svc);
+  localStorage.setItem("ejs_template", tpl);
+  localStorage.setItem("ejs_pubkey", key);
+  showToast("Email config saved!","success");
+  document.getElementById("cfgStatus").innerHTML=`<span style="color:var(--green)">✅ Config saved! Click Send Test Email to verify.</span>`;
+}
+
+async function testEmailJS(){
+  const to = document.getElementById("ejsService") ? 
+    (document.getElementById("cfgEmail")?.value || localStorage.getItem("ejs_service")) : "";
+  const adminEmail = currentUser;
+  await sendEmailJS(adminEmail, "Admin", "Job Jockey — Email Test", "This is a test email. Email is working correctly!");
+}
+
+// ── EmailJS credentials (hardcoded) ──────────
+const EJS_SERVICE  = localStorage.getItem("ejs_service")  || "lbdt qhfe fjjs pfhx";
+const EJS_TEMPLATE = localStorage.getItem("ejs_template") || "template_9fdt08j";
+const EJS_KEY      = localStorage.getItem("ejs_pubkey")   || "hGVTdWAxjoz4EdTlk";
+
+async function sendEmailJS(toEmail, toName, subject, message){
+  const svc = localStorage.getItem("ejs_service")  || "lbdt qhfe fjjs pfhx";
+  const tpl = localStorage.getItem("ejs_template") || "template_9fdt08j";
+  const key = localStorage.getItem("ejs_pubkey")   || "hGVTdWAxjoz4EdTlk";
+
+  try{
+    if(typeof emailjs === "undefined"){
+      showToast("EmailJS not loaded. Check internet connection.","error");
+      return false;
+    }
+    emailjs.init(key);
+    await emailjs.send(svc, tpl, {
+      to_email:  toEmail,
+      to_name:   toName || toEmail.split("@")[0],
+      subject:   subject,
+      message:   message,
+      from_name: "Job Jockey Platform"
+    });
+    return true;
+  }catch(e){
+    console.error("EmailJS error:", e);
+    showToast("Email failed: "+(e.text||e.message||"Unknown error"),"error");
+    return false;
+  }
+}
+
+async function sendCustomEmail(){
+  const to      = document.getElementById("mailTo")?.value.trim();
+  const name    = document.getElementById("mailName")?.value.trim();
+  const subject = document.getElementById("mailSubject")?.value.trim();
+  const body    = document.getElementById("mailBody")?.value.trim();
+  if(!to)     { showToast("Enter recipient email","error"); return; }
+  if(!subject){ showToast("Enter a subject","error"); return; }
+  if(!body)   { showToast("Write a message","error"); return; }
+  const status = document.getElementById("mailStatus");
+  status.innerHTML = `<span style="color:var(--accent)">⏳ Sending to ${to}...</span>`;
+  const ok = await sendEmailJS(to, name, subject, body);
+  if(ok){
+    status.innerHTML = `<span style="color:var(--green)">✅ Email sent to ${to}!</span>`;
+    showToast("Email sent!","success");
+    document.getElementById("mailTo").value="";
+    document.getElementById("mailName").value="";
+    document.getElementById("mailSubject").value="";
+    document.getElementById("mailBody").value="";
+  } else {
+    status.innerHTML = `<span style="color:var(--red)">❌ Failed. Check EmailJS config in settings.</span>`;
+  }
+}
+
+function useTemplate(type){
+  const t = {
+    welcome:   { subject:"Welcome to Job Jockey!", body:"Congratulations! Your application has been approved.\n\nYou have been selected as an intern at Job Jockey.\n\nLogin Details:\nEmail: [your jobjockey email]\nPassword: Welcome@123\n\nPlease login and change your password.\n\nBest regards,\nJob Jockey Team" },
+    interview: { subject:"Interview Invitation — Job Jockey", body:"Dear Candidate,\n\nWe would like to invite you for an interview.\n\nDate: [Date]\nTime: [Time]\nMode: Google Meet\nLink: [Link]\n\nPlease confirm your availability.\n\nBest regards,\nJob Jockey Team" },
+    followup:  { subject:"Application Update — Job Jockey", body:"Dear Candidate,\n\nThis is regarding your application at Job Jockey.\n\n[Add your message here]\n\nThank you.\n\nBest regards,\nJob Jockey Team" },
+    reject:    { subject:"Application Status — Job Jockey", body:"Dear Candidate,\n\nThank you for applying to Job Jockey.\n\nWe regret to inform you that we will not be moving forward with your application at this time.\n\nWe wish you the best in your career.\n\nBest regards,\nJob Jockey Team" }
+  }[type];
+  if(!t) return;
+  document.getElementById("mailSubject").value = t.subject;
+  document.getElementById("mailBody").value    = t.body;
+  showToast("Template loaded","info");
+}
+
+// Quick send email from candidate page
+function openSendEmailModal(toEmail, name){
+  navTo("settings");
+  setTimeout(()=>{
+    const toField = document.getElementById("mailTo");
+    const nameField = document.getElementById("mailName");
+    if(toField)   toField.value = toEmail;
+    if(nameField) nameField.value = name;
+    useTemplate("welcome");
+    document.getElementById("mailTo").scrollIntoView({behavior:"smooth"});
+  }, 300);
+}
+
+
+// ════════════════════════════════════════════
+// CHANGE PASSWORD
+// ════════════════════════════════════════════
+async function renderChangePassword(){
+  document.getElementById("mainContent").innerHTML=`
+  <div class="table-card" style="max-width:480px">
+    <div class="table-card-header"><h3>🔑 Change Password</h3></div>
+    <div style="padding:24px;display:flex;flex-direction:column;gap:16px">
+
+      <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--text-muted)">
+        Logged in as <strong style="color:var(--accent)">${currentUser}</strong> (${currentRole})
+      </div>
+
+      <div class="field">
+        <label>Current Password</label>
+        <input type="password" id="cpCurrent" placeholder="Enter current password"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;box-sizing:border-box">
+      </div>
+      <div class="field">
+        <label>New Password</label>
+        <input type="password" id="cpNew" placeholder="Enter new password (min 4 chars)"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;box-sizing:border-box">
+      </div>
+      <div class="field">
+        <label>Confirm New Password</label>
+        <input type="password" id="cpConfirm" placeholder="Re-enter new password"
+          onkeydown="if(event.key==='Enter')changePassword()"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;box-sizing:border-box">
+      </div>
+
+      <button class="btn-sm btn-accent" onclick="changePassword()" style="align-self:flex-start;padding:10px 24px">
+        🔑 Update Password
+      </button>
+      <div id="cpStatus" style="font-size:13px"></div>
+    </div>
+  </div>`;
+}
+
+async function changePassword(){
+  const current = document.getElementById("cpCurrent")?.value.trim();
+  const newPass = document.getElementById("cpNew")?.value.trim();
+  const confirm = document.getElementById("cpConfirm")?.value.trim();
+  const status  = document.getElementById("cpStatus");
+
+  if(!current){ showToast("Enter your current password","error"); return; }
+  if(!newPass) { showToast("Enter a new password","error"); return; }
+  if(newPass.length < 4){ showToast("Password must be at least 4 characters","error"); return; }
+  if(newPass !== confirm){ showToast("Passwords do not match","error"); return; }
+  if(current === newPass){ showToast("New password must be different from current","error"); return; }
+
+  status.innerHTML = `<span style="color:var(--accent)">⏳ Updating...</span>`;
+
+  try{
+    await api("/users/me/password","PATCH",{current_password:current, new_password:newPass});
+    status.innerHTML = `<span style="color:var(--green)">✅ Password changed successfully!</span>`;
+    showToast("Password updated!","success");
+    document.getElementById("cpCurrent").value="";
+    document.getElementById("cpNew").value="";
+    document.getElementById("cpConfirm").value="";
+    // Update saved password hint
+    setTimeout(()=>{
+      status.innerHTML=`<span style="color:var(--green)">✅ Password changed! Use your new password next time you login.</span>`;
+    },1000);
+  }catch(e){
+    status.innerHTML = `<span style="color:var(--red)">❌ ${e.message}</span>`;
+    showToast("Failed: "+e.message,"error");
+  }
+}
+
+// ─── INIT ────────────────────────────────────
+window.onload=async ()=>{
+  const today   = new Date().toISOString().split("T")[0];
+  const loading = document.getElementById("loadingScreen");
+
+  const hide = ()=>{ if(loading) loading.style.display="none"; };
+
+  // Force update EmailJS credentials every time
+  localStorage.setItem("ejs_service",  "lbdt qhfe fjjs pfhx");
+  localStorage.setItem("ejs_template", "template_9fdt08j");
+  localStorage.setItem("ejs_pubkey",   "hGVTdWAxjoz4EdTlk");
+
+  // Safety net — always hide spinner after 4 seconds maximum
+  setTimeout(hide, 4000);
+
+  try{
+    const savedToken = localStorage.getItem("jj_token");
+    const savedRole  = localStorage.getItem("jj_role");
+    const savedUser  = localStorage.getItem("jj_user");
+    const savedUid   = localStorage.getItem("jj_uid");
+
+    if(savedToken && savedRole && savedUser){
+      token         = savedToken;
+      currentRole   = savedRole;
+      currentUser   = savedUser;
+      currentUserId = parseInt(savedUid) || null;
+
+      try{ await loadAllUsers(); }catch(e){ console.log("Users load failed:", e); }
+
+      try{
+        initApp();
+        connectWS(currentUserId);
+        document.getElementById("appLayout").classList.remove("hidden");
+      }catch(e){
+        console.log("initApp failed:", e);
+        // Clear bad session and show login
+        localStorage.clear();
+        document.getElementById("loginPage").classList.remove("hidden");
+      }
+    } else {
+      document.getElementById("loginPage").classList.remove("hidden");
+    }
+  }catch(e){
+    console.log("Session restore error:", e);
+    document.getElementById("loginPage").classList.remove("hidden");
+  }
+
+  hide();
+
+  const td=document.getElementById("tDeadline"); if(td) td.value=today;
+  const md=document.getElementById("mDate");     if(md) md.value=today;
+};
+</script>
+</body>
+</html>
