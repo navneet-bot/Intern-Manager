@@ -27,7 +27,8 @@
     --radius: 14px;
   }
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+  html,body{height:100%;margin:0;padding:0;overflow:hidden}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text)}
   h1,h2,h3,h4{font-family:'Syne',sans-serif}
   .hidden{display:none!important}
 
@@ -47,95 +48,96 @@
   #loginPage{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);position:relative;overflow:hidden}
   .login-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%, rgba(245,158,11,0.08) 0%, transparent 60%),radial-gradient(ellipse at 70% 20%, rgba(59,130,246,0.06) 0%, transparent 50%)}
   .login-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px);background-size:60px 60px}
-  .login-card{position:relative;z-index:2;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:44px 40px;width:420px;box-shadow:0 40px 80px rgba(0,0,0,0.5)}
-  .login-logo{display:flex;align-items:center;gap:10px;margin-bottom:32px}
-  .login-logo-icon{width:42px;height:42px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;color:#000;font-size:18px}
-  .login-logo span{font-family:'Syne',sans-serif;font-weight:700;font-size:20px}
+  .login-card{position:relative;z-index:2;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:36px 32px;width:400px;box-shadow:0 40px 80px rgba(0,0,0,0.5)}
+  .login-logo{display:flex;align-items:center;gap:10px;margin-bottom:24px}
+  .login-logo-icon{width:40px;height:40px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;color:#000;font-size:16px}
+  .login-logo span{font-family:'Syne',sans-serif;font-weight:700;font-size:18px}
   .login-logo span em{color:var(--accent);font-style:normal}
-  .login-card h2{font-size:26px;font-weight:700;margin-bottom:6px}
-  .login-card p{color:var(--text-muted);font-size:13.5px;margin-bottom:28px}
-  .field-group{margin-bottom:16px}
-  .field-group label{display:block;font-size:12px;font-weight:500;color:var(--text-soft);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px}
-  .field-group input,.field-group select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 15px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border .2s}
+  .login-card h2{font-size:24px;font-weight:700;margin-bottom:4px}
+  .login-card p{color:var(--text-muted);font-size:13px;margin-bottom:20px}
+  .field-group{margin-bottom:14px}
+  .field-group label{display:block;font-size:11px;font-weight:500;color:var(--text-soft);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+  .field-group input,.field-group select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 13px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border .2s;box-sizing:border-box}
   .field-group input:focus,.field-group select:focus{border-color:var(--accent)}
   .field-group select option{background:var(--surface2)}
-  .role-tabs{display:flex;gap:8px;margin-bottom:20px}
-  .role-tab{flex:1;padding:10px;border:1px solid var(--border);border-radius:10px;background:transparent;color:var(--text-muted);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13.5px;font-weight:500;transition:all .2s;text-align:center}
-  .role-tab.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
-  .btn-primary{width:100%;padding:13px;background:var(--accent);border:none;border-radius:10px;color:#000;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;cursor:pointer;transition:all .2s;margin-top:4px}
+  .btn-primary{width:100%;padding:11px;background:var(--accent);border:none;border-radius:9px;color:#000;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:all .2s;margin-top:3px}
   .btn-primary:hover{background:var(--accent2);transform:translateY(-1px)}
-  .domain-note{font-size:12px;color:var(--text-muted);text-align:center;margin-top:14px}
+  .domain-note{font-size:11px;color:var(--text-muted);text-align:center;margin-top:12px}
   .domain-note span{color:var(--accent)}
 
   /* ══════════════════════════════════════
      APP LAYOUT
   ══════════════════════════════════════ */
   #appLayout{display:flex;height:100vh;overflow:hidden}
-  .sidebar{width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
-  .sidebar-header{padding:22px 20px 14px;border-bottom:1px solid var(--border)}
+  .sidebar{width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;height:100vh;overflow:hidden}
+  .sidebar-header{padding:18px 20px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
   .sidebar-logo{display:flex;align-items:center;gap:10px}
   .sidebar-logo-icon{width:34px;height:34px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;color:#000;font-size:14px;flex-shrink:0}
   .sidebar-logo span{font-family:'Syne',sans-serif;font-weight:700;font-size:16px}
   .sidebar-logo span em{color:var(--accent);font-style:normal}
-  .sidebar-user{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+  .sidebar-user{padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
   .user-avatar{width:32px;height:32px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:var(--accent);flex-shrink:0}
   .sidebar-user-info{overflow:hidden}
   .sidebar-user-info .uname{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .sidebar-user-info .urole{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
-  .sidebar-nav{flex:1;padding:12px 10px}
-  .nav-section-label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;padding:8px 10px 4px;font-weight:600}
-  .nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:all .18s;color:var(--text-soft);font-size:13.5px;font-weight:500;margin-bottom:2px;border:none;background:transparent;width:100%;text-align:left}
+  .sidebar-nav{flex:1;padding:10px;min-height:0;overflow-y:auto;overflow-x:hidden}
+  .nav-section-label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;padding:6px 10px 2px;font-weight:600}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;cursor:pointer;transition:all .18s;color:var(--text-soft);font-size:13.5px;font-weight:500;margin-bottom:1px;border:none;background:transparent;width:100%;text-align:left}
   .nav-item:hover{background:var(--surface2);color:var(--text)}
   .nav-item.active{background:var(--accent-dim);color:var(--accent)}
-  .nav-item svg{flex-shrink:0;opacity:.7}
+  .nav-item svg{flex-shrink:0;opacity:.7;width:16px;height:16px}
   .nav-item.active svg{opacity:1}
-  .nav-item.logout{color:var(--red);margin-top:auto}
+  .nav-item.logout{color:var(--red)}
   .nav-item.logout:hover{background:rgba(239,68,68,0.1)}
-  .sidebar-bottom{padding:10px;border-top:1px solid var(--border)}
-  .main-content{flex:1;overflow-y:auto;background:var(--bg)}
-  .main-header{padding:22px 30px 0;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg);z-index:10;padding-bottom:10px;border-bottom:1px solid var(--border)}
-  .page-title h2{font-size:22px;font-weight:700;line-height:1}
-  .page-title p{font-size:13px;color:var(--text-muted);margin-top:4px}
-  .header-actions{display:flex;align-items:center;gap:10px}
-  .icon-btn{width:36px;height:36px;border:1px solid var(--border);border-radius:9px;background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-soft);transition:all .2s;position:relative}
+  .sidebar-bottom{padding:8px;border-top:1px solid var(--border);flex-shrink:0}
+  .main-content{flex:1;display:flex;flex-direction:column;background:var(--bg);overflow:hidden;min-width:0}
+  .main-header{padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--bg);border-bottom:1px solid var(--border);z-index:10}
+  .page-title h2{font-size:20px;font-weight:700;line-height:1}
+  .page-title p{font-size:12px;color:var(--text-muted);margin-top:2px}
+  .header-actions{display:flex;align-items:center;gap:8px}
+  .icon-btn{width:32px;height:32px;border:1px solid var(--border);border-radius:8px;background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-soft);transition:all .2s;position:relative}
   .icon-btn:hover{border-color:var(--accent);color:var(--accent)}
-  .notif-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;background:var(--accent);border-radius:50%;border:2px solid var(--bg)}
-  .page-body{padding:24px 30px 30px}
+  .notif-dot{position:absolute;top:4px;right:4px;width:6px;height:6px;background:var(--accent);border-radius:50%;border:1.5px solid var(--bg);display:none}
+  .notif-dot.visible{display:block}
+  .page-body{padding:20px 24px;flex:1;overflow-y:auto;overflow-x:hidden;min-height:0}
+  .page-body.chat-mode{padding:0;overflow:hidden}
   .section{display:none}
   .section.active{display:block}
 
   /* ── STAT CARDS ── */
-  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
-  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;position:relative;overflow:hidden;transition:transform .2s,border-color .2s}
-  .stat-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,0.12)}
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;position:relative;overflow:hidden;transition:transform .2s,border-color .2s;min-width:0}
+  .stat-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,0.14)}
   .stat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:var(--radius) var(--radius) 0 0}
   .stat-card.amber::after{background:var(--accent)}.stat-card.green::after{background:var(--green)}.stat-card.blue::after{background:var(--blue)}.stat-card.purple::after{background:var(--purple)}
-  .stat-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+  .stat-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
   .stat-icon.amber{background:rgba(245,158,11,0.12);color:var(--accent)}.stat-icon.green{background:rgba(16,185,129,0.12);color:var(--green)}.stat-icon.blue{background:rgba(59,130,246,0.12);color:var(--blue)}.stat-icon.purple{background:rgba(139,92,246,0.12);color:var(--purple)}
-  .stat-value{font-family:'Syne',sans-serif;font-size:28px;font-weight:700;line-height:1}
-  .stat-label{font-size:12.5px;color:var(--text-muted);margin-top:4px}
-  .stat-badge{position:absolute;top:18px;right:18px;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600}
+  .stat-value{font-family:'Syne',sans-serif;font-size:26px;font-weight:700;line-height:1}
+  .stat-label{font-size:12px;color:var(--text-muted);margin-top:4px}
+  .stat-badge{position:absolute;top:14px;right:14px;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600}
   .stat-badge.up{background:rgba(16,185,129,0.12);color:var(--green)}.stat-badge.down{background:rgba(239,68,68,0.12);color:var(--red)}
 
   /* ── CHARTS ── */
-  .charts-row{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:24px}
-  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px}
-  .chart-card h3{font-size:14px;font-weight:600;margin-bottom:18px;color:var(--text)}
-  .chart-wrap{position:relative;height:200px}
+  .charts-row{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:20px}
+  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+  .chart-card h3{font-size:14px;font-weight:600;margin-bottom:16px;color:var(--text);font-family:'Syne',sans-serif}
+  .chart-wrap{position:relative;height:180px}
 
   /* ── TABLES ── */
-  .table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px}
-  .table-card-header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--border)}
-  .table-card-header h3{font-size:15px;font-weight:600}
-  .btn-sm{padding:7px 14px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all .2s}
+  .table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px}
+  .table-card-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px}
+  .table-card-header h3{font-size:14px;font-weight:600}
+  .btn-sm{padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all .2s;white-space:nowrap}
   .btn-accent{background:var(--accent);color:#000}.btn-accent:hover{background:var(--accent2)}
   .btn-outline{background:transparent;border:1px solid var(--border);color:var(--text-soft)}.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
   table{width:100%;border-collapse:collapse}
   thead tr{background:rgba(255,255,255,0.02)}
-  th{text-align:left;padding:11px 20px;font-size:11.5px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.6px}
-  td{padding:13px 20px;font-size:13.5px;border-top:1px solid var(--border)}
+  th{text-align:left;padding:10px 20px;font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+  td{padding:12px 20px;font-size:13px;border-top:1px solid var(--border);vertical-align:middle}
   tr:hover td{background:rgba(255,255,255,0.02)}
-  .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600}
+  .table-scroll{overflow-x:auto}
+  .table-wrapper{overflow-y:auto;max-height:280px}
+  .badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:18px;font-size:10.5px;font-weight:600}
   .badge::before{content:'';width:5px;height:5px;border-radius:50%;flex-shrink:0}
   .badge-green{background:rgba(16,185,129,0.12);color:var(--green)}.badge-green::before{background:var(--green)}
   .badge-red{background:rgba(239,68,68,0.12);color:var(--red)}.badge-red::before{background:var(--red)}
@@ -169,52 +171,58 @@
   /* ══════════════════════════════════════
      CHAT MODULE
   ══════════════════════════════════════ */
-  .chat-layout{display:grid;grid-template-columns:240px 1fr;height:calc(100vh - 120px);gap:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
-  .chat-sidebar{border-right:1px solid var(--border);display:flex;flex-direction:column}
-  .chat-sidebar-header{padding:16px;border-bottom:1px solid var(--border);font-weight:600;font-size:14px}
-  .chat-search{padding:10px 14px;border-bottom:1px solid var(--border)}
-  .chat-search input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none}
-  .chat-list{flex:1;overflow-y:auto;padding:8px}
-  .chat-contact{display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:9px;cursor:pointer;transition:all .15s}
+  .chat-layout{display:grid;grid-template-columns:280px 1fr;height:100%;gap:0;background:var(--surface);overflow:hidden}
+  .chat-sidebar{border-right:1px solid var(--border);display:flex;flex-direction:column;height:100%;overflow:hidden;background:var(--surface)}
+  .chat-sidebar-header{padding:16px 20px;border-bottom:1px solid var(--border);font-weight:700;font-size:15px;flex-shrink:0;font-family:'Syne',sans-serif}
+  .chat-search{padding:10px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
+  .chat-search input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:8px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;box-sizing:border-box;transition:border .2s}
+  .chat-search input:focus{border-color:var(--accent)}
+  .chat-list{flex:1;overflow-y:auto;overflow-x:hidden;padding:8px;min-height:0}
+  .chat-contact{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:all .15s;margin-bottom:2px}
   .chat-contact:hover,.chat-contact.active{background:var(--surface2)}
-  .chat-contact .cav{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;font-family:'Syne',sans-serif;flex-shrink:0;border:2px solid var(--border)}
+  .chat-contact .cav{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;font-family:'Syne',sans-serif;flex-shrink:0;border:2px solid transparent}
+  .chat-contact.active .cav{border-color:var(--accent)}
   .chat-contact .cinfo{flex:1;min-width:0}
   .chat-contact .cname{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .chat-contact .clast{font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chat-contact .clast{font-size:11.5px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
   .chat-unread{background:var(--accent);color:#000;width:18px;height:18px;border-radius:50%;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-  .chat-area{display:flex;flex-direction:column}
-  .chat-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
-  .chat-header .cav{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;font-family:'Syne',sans-serif;flex-shrink:0}
+  .chat-area{display:flex;flex-direction:column;height:100%;overflow:hidden;min-height:0;background:var(--bg)}
+  .chat-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0;background:var(--surface);min-height:58px}
+  .chat-header .cav{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;font-family:'Syne',sans-serif;flex-shrink:0}
   .chat-header-info .cn{font-weight:600;font-size:14px}
   .chat-header-info .cs{font-size:12px;color:var(--green)}
-  .chat-messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px}
-  .msg{display:flex;gap:10px;max-width:70%}
+  .chat-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--text-muted)}
+  .chat-empty .ce-icon{width:64px;height:64px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:4px}
+  .chat-empty h4{font-size:16px;font-weight:600;color:var(--text-soft);font-family:'Syne',sans-serif}
+  .chat-empty p{font-size:13px;text-align:center;max-width:220px}
+  .chat-messages{flex:1;overflow-y:auto;overflow-x:hidden;padding:20px;display:flex;flex-direction:column;gap:12px;min-height:0}
+  .msg{display:flex;gap:8px;max-width:70%}
   .msg.me{align-self:flex-end;flex-direction:row-reverse}
-  .msg-avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:'Syne',sans-serif;flex-shrink:0;align-self:flex-end}
-  .msg-bubble{padding:10px 14px;border-radius:14px;font-size:13.5px;line-height:1.55;max-width:100%}
-  .msg .msg-bubble{background:var(--surface2);border:1px solid var(--border);border-bottom-left-radius:4px}
-  .msg.me .msg-bubble{background:var(--accent-dim);border:1px solid rgba(245,158,11,0.25);border-bottom-right-radius:4px;color:var(--text)}
-  .msg-time{font-size:10.5px;color:var(--text-muted);margin-top:4px;text-align:right}
+  .msg-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;font-family:'Syne',sans-serif;flex-shrink:0;align-self:flex-end}
+  .msg-bubble{padding:9px 14px;border-radius:14px;font-size:13.5px;line-height:1.55;max-width:100%;word-break:break-word;overflow-wrap:anywhere}
+  .msg .msg-bubble{background:var(--surface);border:1px solid var(--border);border-bottom-left-radius:4px}
+  .msg.me .msg-bubble{background:rgba(245,158,11,0.18);border:1px solid rgba(245,158,11,0.3);border-bottom-right-radius:4px;color:var(--text)}
+  .msg-time{font-size:10px;color:var(--text-muted);margin-top:3px;text-align:right}
   .msg .msg-time{text-align:left}
-  .chat-input-area{padding:14px 20px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px}
-  .chat-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 15px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13.5px;outline:none;transition:border .2s}
+  .chat-input-area{padding:12px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;background:var(--surface)}
+  .chat-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:11px 16px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13.5px;outline:none;transition:border .2s;box-sizing:border-box;resize:none;max-height:80px;min-height:44px;line-height:1.45;display:block}
   .chat-input:focus{border-color:var(--accent)}
-  .send-btn{width:40px;height:40px;background:var(--accent);border:none;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#000;transition:all .2s;flex-shrink:0}
-  .send-btn:hover{background:var(--accent2)}
+  .send-btn{width:44px;height:44px;background:var(--accent);border:none;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#000;transition:all .2s;flex-shrink:0}
+  .send-btn:hover{background:var(--accent2);transform:scale(1.05)}
 
   /* ══════════════════════════════════════
      MODAL
   ══════════════════════════════════════ */
   .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
-  .modal{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:28px 30px;width:500px;max-width:95vw;max-height:90vh;overflow-y:auto}
-  .modal h3{font-size:18px;font-weight:700;margin-bottom:20px}
-  .modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:24px}
-  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  .field{margin-bottom:14px}
-  .field label{display:block;font-size:12px;font-weight:500;color:var(--text-soft);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
-  .field input,.field select,.field textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 13px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13.5px;outline:none;transition:border .2s}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:20px 24px;width:440px;max-width:88vw;max-height:82vh;overflow-y:auto}
+  .modal h3{font-size:16px;font-weight:700;margin-bottom:16px}
+  .modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:11px;font-weight:500;color:var(--text-soft);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+  .field input,.field select,.field textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border .2s;box-sizing:border-box}
   .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
-  .field textarea{resize:vertical;min-height:80px}
+  .field textarea{resize:vertical;min-height:70px}
   .field select option{background:var(--surface2)}
 
   /* ══════════════════════════════════════
@@ -302,18 +310,60 @@
   .upload-zone:hover{border-color:var(--accent)}
   .upload-zone p{font-size:13px;color:var(--text-muted);margin-top:8px}
 
+  /* ── NOTIFICATION BELL GLOW ── */
+  @keyframes bellGlow{0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,0.4)}50%{box-shadow:0 0 0 6px rgba(245,158,11,0)}}
+  .notif-bell-active{border-color:var(--accent)!important;color:var(--accent)!important;animation:bellGlow 1.8s ease infinite}
+  .notif-dot{display:none}
+  .notif-dot.visible{display:block}
+
+  /* ── NOTIFICATION POPUP ── */
+  #notifPopup{position:fixed;top:60px;right:20px;width:320px;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 16px 48px rgba(0,0,0,0.5);z-index:2000;display:none;overflow:hidden}
+  #notifPopup.open{display:block;animation:slideIn .2s ease}
+  .notif-popup-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .notif-popup-header span{font-size:13.5px;font-weight:600}
+  .notif-popup-list{max-height:340px;overflow-y:auto}
+  .notif-popup-item{padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s}
+  .notif-popup-item:hover{background:var(--surface2)}
+  .notif-popup-item:last-child{border-bottom:none}
+  .notif-popup-item.unread{border-left:2px solid var(--accent)}
+  .notif-popup-title{font-size:13px;font-weight:600;margin-bottom:2px}
+  .notif-popup-body{font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .notif-popup-footer{padding:10px 16px;border-top:1px solid var(--border);text-align:center}
+  .notif-popup-footer a{font-size:12.5px;color:var(--accent);cursor:pointer;text-decoration:none}
+
   /* ── RESPONSIVE ── */
+  @media(max-width:1200px){
+    .stats-grid{grid-template-columns:repeat(2,1fr)}
+    .charts-row{grid-template-columns:1fr}
+  }
   @media(max-width:900px){
-    .stats-grid{grid-template-columns:1fr 1fr}
+    .stats-grid{grid-template-columns:repeat(2,1fr)}
     .charts-row{grid-template-columns:1fr}
     .groups-grid{grid-template-columns:1fr 1fr}
     .task-kanban{grid-template-columns:1fr}
+    .chat-layout{grid-template-columns:220px 1fr}
+  }
+  @media(max-width:680px){
+    .stats-grid{grid-template-columns:1fr 1fr}
+    .groups-grid{grid-template-columns:1fr}
+    .chat-layout{grid-template-columns:1fr}
+    .chat-sidebar{display:none}
   }
 </style>
 </head>
 <body>
 
 <div id="toast-area"></div>
+
+<!-- Notification popup panel -->
+<div id="notifPopup">
+  <div class="notif-popup-header">
+    <span>🔔 Notifications</span>
+    <button onclick="closeNotifPopup()" style="background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;line-height:1">✕</button>
+  </div>
+  <div class="notif-popup-list" id="notifPopupList"></div>
+  <div class="notif-popup-footer"><a onclick="closeNotifPopup();navTo('notifications')">View all notifications →</a></div>
+</div>
 
 <!-- Loading screen shown while checking session -->
 <div id="loadingScreen" style="position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999">
@@ -334,23 +384,8 @@
       <span>Job <em>Jockey</em></span>
     </div>
     <h2>Welcome back</h2>
-    <p>Sign in to your intern workspace</p>
+    <p>Sign in to your account</p>
 
-    <div class="role-tabs">
-      <div class="role-tab active" id="tabAdmin" onclick="selectRole('admin')">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:inline;margin-right:5px"><path d="M12 2l3 7h7l-5.5 4 2 7L12 17l-6.5 3 2-7L2 9h7z"/></svg>
-        Admin
-      </div>
-      <div class="role-tab" id="tabIntern" onclick="selectRole('intern')">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:inline;margin-right:5px"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        Intern
-      </div>
-    </div>
-
-    <div class="field-group">
-      <label>Full Name</label>
-      <input type="text" id="loginName" placeholder="e.g. Arjun Sharma">
-    </div>
     <div class="field-group">
       <label>Email Address</label>
       <input type="email" id="loginEmail" placeholder="yourname@jobjockey.in">
@@ -400,12 +435,9 @@
         <p id="pageSubtitle">Welcome back 👋</p>
       </div>
       <div class="header-actions">
-        <div class="icon-btn" onclick="navTo('notifications')" title="Notifications">
+        <div class="icon-btn" id="notifBellBtn" onclick="toggleNotifPopup()" title="Notifications">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-          <div class="notif-dot"></div>
-        </div>
-        <div class="icon-btn" title="Settings">
-          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          <div class="notif-dot" id="notifDot"></div>
         </div>
       </div>
     </div>
@@ -433,7 +465,7 @@
     <div class="form-row">
       <div class="field"><label>Deadline</label><input type="date" id="tDeadline"></div>
       <div class="field"><label>Project</label>
-        <select id="tProject"><option>Website Revamp</option><option>Mobile App</option><option>Marketing Campaign</option><option>Data Pipeline</option></select>
+        <select id="tProject"><option value="">-- Select Project --</option></select>
       </div>
     </div>
     <div class="field"><label>Description</label><textarea id="tDesc" placeholder="Task details..."></textarea></div>
@@ -450,6 +482,7 @@ const API_URL = "http://127.0.0.1:8000";
 let token="", currentRole="", currentUser="", currentSection="";
 let currentUserId=null, selectedReceiverId=null, ws=null;
 let allUsers=[], chatCharts={}, calDate=new Date();
+let currentSheetId="";
 
 const COLORS=["#f59e0b","#3b82f6","#10b981","#8b5cf6","#ef4444","#06b6d4"];
 
@@ -485,7 +518,7 @@ function prioritySpan(p){
   const m={High:"priority-high",Medium:"priority-medium",Low:"priority-low"};
   return `<span class="${m[p]||""}">${p}</span>`;
 }
-function roleLabel(r){return {admin:"👑 Admin (Boss)",super_admin:"⭐ Super Admin",intern:"🎓 Intern"}[r]||r;}
+function roleLabel(r){return {admin:"admin",super_admin:"super admin",intern:"intern"}[r]||r;}
 function roleBadge(r){
   const cls={admin:"badge-red",super_admin:"badge-purple",intern:"badge-blue"}[r]||"badge-gray";
   return `<span class="badge ${cls}">${roleLabel(r)}</span>`;
@@ -531,13 +564,12 @@ const ADMIN_NAV=[
     {id:"notifications",label:"Notifications",icon:svgNotif},
   ]},
   {section:"System",items:[
-    {id:"changepassword",label:"Change Password",icon:`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>`},
-    {id:"settings",label:"Email Settings",icon:`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>`},
+    {id:"settings",label:"Settings",icon:`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>`},
   ]},
 ];
 const SUPERADMIN_NAV=[
   {section:"Main",items:[{id:"dashboard",label:"Dashboard",icon:svgDash}]},
-  {section:"System",items:[{id:"changepassword",label:"Change Password",icon:`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>`}]},
+  {section:"System",items:[{id:"settings",label:"Settings",icon:`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>`}]},
   {section:"Manage",items:[
     {id:"tasks",label:"Tasks",icon:svgTask},
     {id:"projects",label:"Projects",icon:svgProj},
@@ -567,25 +599,21 @@ const INTERN_NAV=[
     {id:"calendar",label:"Calendar",icon:svgCal},
     {id:"notifications",label:"Notifications",icon:svgNotif},
   ]},
+  {section:"Account",items:[
+    {id:"settings",label:"Settings",icon:`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>`},
+  ]},
 ];
 
 // ─── AUTH ────────────────────────────────────
-function selectRole(r){
-  currentRole=r;
-  document.getElementById("tabAdmin").classList.toggle("active",r==="admin");
-  document.getElementById("tabIntern").classList.toggle("active",r==="intern");
-}
 
 async function doLogin(){
-  const name=document.getElementById("loginName").value.trim();
   const email=document.getElementById("loginEmail").value.trim();
   const password=document.getElementById("loginPassword").value.trim();
-  if(!name){showToast("Please enter your name","error");return;}
   if(!email){showToast("Please enter your email","error");return;}
   if(!password){showToast("Please enter your password","error");return;}
   try{
     const data=await api("/login","POST",{email,password});
-    token=data.access_token; currentRole=data.role; currentUser=data.name||name; currentUserId=data.user_id;
+    token=data.access_token; currentRole=data.role; currentUser=data.name; currentUserId=data.user_id;
     // Save session to localStorage so refresh doesn't log out
     localStorage.setItem("jj_token", token);
     localStorage.setItem("jj_role", currentRole);
@@ -597,6 +625,8 @@ async function doLogin(){
     await loadAllUsers();
     initApp();
     connectWS(data.user_id);
+    _lastNotifCount=-1; // force initial check
+    setTimeout(pollNotifications,1000);
     showToast("Welcome back, "+currentUser+" 👋","success");
   }catch(e){ showToast("Login failed: "+e.message,"error"); }
 }
@@ -639,10 +669,21 @@ function doLogout(){
 async function loadAllUsers(){
   try{allUsers=await api("/users");}catch(e){allUsers=[];}
 }
-function populateAssignDropdown(){
+async function populateAssignDropdown(){
+  // Always fetch fresh users so newly approved candidates appear
+  try{ allUsers = await api("/users"); }catch(e){}
   const sel=document.getElementById("tAssign"); if(!sel)return;
   const assignable=isAdmin()?allUsers.filter(u=>u.role!=="admin"):allUsers.filter(u=>u.role==="intern");
   sel.innerHTML=assignable.map(u=>`<option value="${u.email}">${u.name} (${u.role})</option>`).join("");
+}
+
+async function populateProjectDropdown(){
+  const sel=document.getElementById("tProject"); if(!sel)return;
+  try{
+    const projects=await api("/projects");
+    sel.innerHTML=`<option value="">-- Select Project --</option>`+
+      projects.map(p=>`<option value="${p.name}">${p.name}</option>`).join("");
+  }catch(e){ sel.innerHTML=`<option value="">-- Select Project --</option>`; }
 }
 
 function initApp(){
@@ -658,16 +699,19 @@ function initApp(){
   });
   navTo("dashboard");
   populateAssignDropdown();
+  populateProjectDropdown();
 }
 
 function navTo(id){
   currentSection=id;
   document.querySelectorAll(".nav-item").forEach(el=>el.classList.toggle("active",el.id==="nav_"+id));
-  const titles={dashboard:"Dashboard",users:"Users & Roles",candidates:"Candidates",tasks:"Tasks",projects:"Projects",attendance:"Attendance",reports:"Reports",productivity:"Productivity",chat:"Chat",groups:"Groups",meetings:"Meetings",calendar:"Calendar",notifications:"Notifications",mytasks:"My Tasks",settings:"Email Settings",changepassword:"Change Password"};
-  const subs={dashboard:"Overview of all activities",users:"Manage roles and permissions",candidates:"Manage applicants",tasks:"Assign and track tasks",projects:"Project progress",attendance:"Daily attendance",reports:"Work reports",productivity:"Performance metrics",chat:"Team messages",groups:"Project teams",meetings:"Scheduled meetings",calendar:"Events and schedule",notifications:"Alerts and updates",mytasks:"Your assigned tasks",settings:"Configure Gmail to send emails to candidates",changepassword:"Update your login password"};
+  const titles={dashboard:"Dashboard",users:"Users & Roles",candidates:"Candidates",tasks:"Tasks",projects:"Projects",attendance:"Attendance",reports:"Reports",productivity:"Productivity",chat:"Chat",groups:"Groups",meetings:"Meetings",calendar:"Calendar",notifications:"Notifications",mytasks:"My Tasks",settings:"Settings"};
+  const subs={dashboard:"Overview of all activities",users:"Manage roles and permissions",candidates:"Manage applicants",tasks:"Assign and track tasks",projects:"Project progress",attendance:"Daily attendance",reports:"Work reports",productivity:"Performance metrics",chat:"Team messages",groups:"Project teams",meetings:"Scheduled meetings",calendar:"Events and schedule",notifications:"Alerts and updates",mytasks:"Your assigned tasks",settings:"Account, email & security settings"};
   document.getElementById("pageTitle").textContent=titles[id]||id;
   document.getElementById("pageSubtitle").textContent=subs[id]||"";
   Object.values(chatCharts).forEach(c=>c&&c.destroy&&c.destroy()); chatCharts={};
+  // Remove chat-mode padding override when leaving chat
+  if(id!=="chat") document.getElementById("mainContent").classList.remove("chat-mode");
   // Clean up dynamic modals when navigating away
   if(id!=="projects"){const m=document.getElementById("projectModal");if(m)m.remove();}
   const renders={dashboard:renderDashboard,users:renderUsers,candidates:renderCandidates,tasks:renderTasks,projects:renderProjects,attendance:renderAttendance,reports:renderReports,productivity:renderProductivity,chat:renderChat,groups:renderGroups,meetings:renderMeetings,calendar:renderCalendar,notifications:renderNotifications,mytasks:renderMyTasks,settings:renderSettings,changepassword:renderChangePassword};
@@ -678,6 +722,7 @@ function navTo(id){
 // DASHBOARD
 // ════════════════════════════════════════════
 async function renderDashboard(){
+  if(isIntern()){ await renderInternDashboard(); return; }
   let stats={total_interns:0,tasks_completed:0,total_projects:0,present_today:0,tasks_pending:0,tasks_in_progress:0};
   let recentTasks=[];
   try{stats=await api("/stats");}catch(e){}
@@ -694,7 +739,7 @@ async function renderDashboard(){
     <div class="chart-card"><h3>Task Distribution</h3><div class="chart-wrap"><canvas id="statusChart"></canvas></div></div>
   </div>
   <div class="table-card">
-    <div class="table-card-header"><h3>Recent Tasks</h3>${canManage()?`<button class="btn-sm btn-accent" onclick="openModal('taskModal')">+ New Task</button>`:""}</div>
+    <div class="table-card-header"><h3>Recent Tasks</h3>${canManage()?`<button class="btn-sm btn-accent" onclick="populateAssignDropdown();populateProjectDropdown();openModal('taskModal')">+ New Task</button>`:""}</div>
     <table><thead><tr><th>Task</th><th>Assigned To</th><th>Priority</th><th>Status</th><th>Deadline</th></tr></thead>
     <tbody>${recentTasks.slice(0,5).map(t=>`<tr><td><strong>${t.title}</strong><br><span style="font-size:11.5px;color:var(--text-muted)">${t.project||""}</span></td><td>${t.assigned_to||"—"}</td><td>${prioritySpan(t.priority)}</td><td>${statusBadge(t.status)}</td><td>${t.deadline||"TBD"}</td></tr>`).join("")||`<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted)">No tasks yet</td></tr>`}</tbody>
     </table>
@@ -703,6 +748,117 @@ async function renderDashboard(){
     chatCharts.trend=initChart("trendChart","bar",["Pending","In Progress","Completed"],[{label:"Tasks",data:[stats.tasks_pending||0,stats.tasks_in_progress||0,stats.tasks_completed||0],backgroundColor:["rgba(245,158,11,0.7)","rgba(59,130,246,0.7)","rgba(16,185,129,0.7)"],borderRadius:6}]);
     chatCharts.status=initChart("statusChart","doughnut",["Completed","In Progress","Pending"],[{data:[stats.tasks_completed||0,stats.tasks_in_progress||0,stats.tasks_pending||0],backgroundColor:["#10b981","#3b82f6","#f59e0b"],borderWidth:0,hoverOffset:6}]);
   },50);
+}
+
+async function renderInternDashboard(){
+  const myEmail=localStorage.getItem("jj_email")||"";
+  let tasks=[], attendance=[], groups=[], notifications=[];
+  try{tasks=await api("/tasks");}catch(e){}
+  try{attendance=await api("/attendance");}catch(e){}
+  try{groups=await api("/groups");}catch(e){}
+  try{notifications=await api("/notifications");}catch(e){}
+
+  const pending=tasks.filter(t=>t.status==="Pending").length;
+  const inProg=tasks.filter(t=>t.status==="In Progress").length;
+  const done=tasks.filter(t=>t.status==="Completed").length;
+  const total=tasks.length;
+
+  // Attendance stats (last 30 days)
+  const present=attendance.filter(a=>a.status==="Present").length;
+  const absent=attendance.filter(a=>a.status==="Absent").length;
+  const leave=attendance.filter(a=>a.status==="Leave").length;
+  const attTotal=attendance.length;
+  const attScore=attTotal>0?Math.round(present/attTotal*100):0;
+  const taskScore=total>0?Math.round(done/total*100):0;
+  const overallScore=Math.round(taskScore*0.6+attScore*0.4);
+
+  // My groups
+  const myGroups=groups.filter(g=>{let m=[];try{m=JSON.parse(g.members||"[]");}catch(e){}return m.includes(myEmail);});
+
+  // Today attendance status
+  const todayISO=new Date().toISOString().split("T")[0];
+  const todayRec=attendance.find(a=>a.date===todayISO);
+  const todayStatus=todayRec?todayRec.status:"Not Marked";
+
+  // Unread notifications
+  const unread=notifications.filter(n=>!n.read).length;
+
+  document.getElementById("mainContent").innerHTML=`
+  <!-- Welcome strip -->
+  <div style="background:linear-gradient(135deg,rgba(245,158,11,0.12),rgba(59,130,246,0.08));border:1px solid rgba(245,158,11,0.2);border-radius:14px;padding:20px 24px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div>
+      <div style="font-size:20px;font-weight:700;font-family:'Syne',sans-serif">Welcome back, ${currentUser} 👋</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-top:4px">Today is ${new Date().toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 18px">
+        <div style="font-size:22px;font-weight:700;font-family:'Syne',sans-serif;color:${todayStatus==="Present"?"var(--green)":todayStatus==="Absent"?"var(--red)":todayStatus==="Leave"?"var(--purple)":"var(--text-muted)"}">${todayStatus==="Present"?"✓":todayStatus==="Absent"?"✗":todayStatus==="Leave"?"🏖":"—"}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Today</div>
+      </div>
+      ${todayStatus==="Not Marked"?`<button class="btn-sm btn-accent" onclick="markMyAttendance()">✓ Mark Present</button>`:""}
+    </div>
+  </div>
+
+  <!-- Stats row -->
+  <div class="stats-grid" style="margin-bottom:20px">
+    <div class="stat-card amber"><div class="stat-icon amber">${svgTask}</div><div class="stat-value">${pending}</div><div class="stat-label">Tasks Pending</div></div>
+    <div class="stat-card blue"><div class="stat-icon blue">${svgTask}</div><div class="stat-value">${inProg}</div><div class="stat-label">In Progress</div></div>
+    <div class="stat-card green"><div class="stat-icon green">${svgTask}</div><div class="stat-value">${done}</div><div class="stat-label">Completed</div></div>
+    <div class="stat-card purple"><div class="stat-icon purple">${svgNotif}</div><div class="stat-value">${unread}</div><div class="stat-label">Unread Alerts</div></div>
+  </div>
+
+  <!-- Performance + Groups row -->
+  <div class="charts-row" style="margin-bottom:20px">
+    <!-- Performance card -->
+    <div class="chart-card">
+      <h3 style="margin-bottom:16px">📊 My Performance</h3>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:6px"><span style="color:var(--text-muted)">Task Completion</span><strong style="color:var(--accent)">${taskScore}%</strong></div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${taskScore}%"></div></div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:3px">${done}/${total} tasks done</div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:6px"><span style="color:var(--text-muted)">Attendance Rate</span><strong style="color:var(--green)">${attScore}%</strong></div>
+          <div class="progress-bar"><div class="progress-fill green" style="width:${attScore}%"></div></div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:3px">${present} present · ${absent} absent · ${leave} leave</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;margin-top:4px">
+          <div style="font-size:30px;font-weight:800;font-family:'Syne',sans-serif;color:${overallScore>=80?"var(--green)":overallScore>=60?"var(--accent)":"var(--red)"}">${overallScore}<span style="font-size:14px;font-weight:500;color:var(--text-muted)">/100</span></div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:3px">Overall Score</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- My Groups -->
+    <div class="chart-card">
+      <h3 style="margin-bottom:16px">👥 My Groups</h3>
+      ${myGroups.length?myGroups.map((g,i)=>{
+        let members=[];try{members=JSON.parse(g.members||"[]");}catch(e){}
+        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="width:36px;height:36px;border-radius:9px;background:${COLORS[i%COLORS.length]}18;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${g.icon||"📁"}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${g.name}</div>
+            <div style="font-size:11.5px;color:var(--text-muted)">${members.length} member${members.length!==1?"s":""} · ${g.description||""}</div>
+          </div>
+        </div>`;
+      }).join(""):`<div style="text-align:center;padding:30px;color:var(--text-muted);font-size:13px">You haven't been added to any group yet</div>`}
+    </div>
+  </div>
+
+  <!-- Recent tasks -->
+  <div class="table-card">
+    <div class="table-card-header"><h3>📋 My Recent Tasks</h3><button class="btn-sm btn-outline" onclick="navTo('mytasks')">View All →</button></div>
+    <table><thead><tr><th>Task</th><th>Project</th><th>Priority</th><th>Status</th><th>Deadline</th></tr></thead>
+    <tbody>${tasks.slice(0,5).map(t=>`<tr>
+      <td><strong>${t.title}</strong></td>
+      <td style="color:var(--text-muted);font-size:12px">${t.project||"—"}</td>
+      <td>${prioritySpan(t.priority)}</td>
+      <td>${statusBadge(t.status)}</td>
+      <td>${t.deadline||"TBD"}</td>
+    </tr>`).join("")||`<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted)">No tasks assigned yet</td></tr>`}
+    </tbody></table>
+  </div>`;
 }
 
 // ════════════════════════════════════════════
@@ -883,7 +1039,13 @@ async function demoteUser(id,name){
 }
 async function deleteUser(id,name){
   if(!confirm("Delete user "+name+"? This cannot be undone."))return;
-  try{await api("/users/"+id,"DELETE");showToast(name+" deleted","error");await loadAllUsers();renderUsers();}
+  try{
+    await api("/users/"+id,"DELETE");
+    showToast(name+" deleted","error");
+    await loadAllUsers();
+    populateAssignDropdown();
+    renderUsers();
+  }
   catch(e){showToast("Failed: "+e.message,"error");}
 }
 
@@ -918,7 +1080,7 @@ async function renderCandidates(){
           jjEmail=c.resume.replace("LOGIN:","").split("|PASS:")[0]||"";
         }
         if(!jjEmail){
-          const nm=c.name.toLowerCase().replace(/[^a-z ]/g,"").trim().split(" ");
+          const nm=c.name.toLowerCase().split("").filter(ch=>(ch>="a"&&ch<="z")||ch===" ").join("").trim().split(" ");
           jjEmail=nm.length>=2?nm[0]+"."+nm[nm.length-1]+"@jobjockey.in":nm[0]+"@jobjockey.in";
         }
         return `<tr>
@@ -958,6 +1120,10 @@ async function renderCandidates(){
         </div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <!-- Add Candidate manually -->
+        <button class="btn-sm btn-accent" onclick="openAddCandidateModal()" style="display:inline-flex;align-items:center;gap:5px">
+          + Add Candidate
+        </button>
         <!-- Upload CSV -->
         <label style="cursor:pointer" title="Upload CSV file">
           <span class="btn-sm btn-outline" style="display:inline-flex;align-items:center;gap:5px">
@@ -1075,8 +1241,12 @@ async function renderCandidates(){
         <td>${c.resume&&!c.resume.startsWith("LOGIN:")?`<a href="${c.resume}" target="_blank" style="color:var(--accent);font-size:12px">View</a>`:"—"}</td>
         <td style="display:flex;gap:4px;flex-wrap:wrap">
           ${c.status==="Pending"?`<button class="action-btn action-approve" onclick="updateCandidate(${c.id},'Approved')" title="Approve">✓</button><button class="action-btn action-reject" onclick="updateCandidate(${c.id},'Rejected')" title="Reject">✗</button>`:""}
-          ${c.status==="Approved"?`<button class="action-btn action-edit" onclick="goAssignTask('${c.email}','${c.name}')" title="Assign Task">📋</button>`:""}
-          ${isAdmin()?`<button class="action-btn action-edit" onclick="openSendEmailModal('${c.email}','${c.name}')" title="Send Email">📧</button><button class="action-btn action-reject" onclick="deleteCandidate(${c.id},'${c.name}')" title="Delete">🗑</button>`:""}
+          ${c.status==="Approved"?'<button class="action-btn action-edit" onclick="goAssignTask(\''+c.email+'\',\''+c.name+'\')" title="Assign Task">📋</button>':""}
+          ${isAdmin()?(
+            '<button class="action-btn action-edit" onclick="openSendEmailModal(\''+c.email+'\',\''+c.name+'\')" title="Send Email">📧</button>'+
+            (c.status==="Approved"&&c.resume&&c.resume.startsWith("LOGIN:")?'<button class="action-btn action-reject" onclick="revokeCredentials('+c.id+',\''+c.name+'\')" style="background:rgba(139,92,246,0.15);color:var(--purple)">🔒 Revoke</button>':'')+
+            '<button class="action-btn action-reject" onclick="deleteCandidate('+c.id+',\''+c.name+'\')" title="Delete">🗑</button>'
+          ):""}
         </td>
       </tr>`).join("")||`<tr><td colspan="12" style="text-align:center;padding:24px;color:var(--text-muted)">No candidates yet — use Google Form Sync or Upload CSV above!</td></tr>`}
       </tbody>
@@ -1182,86 +1352,61 @@ async function importCsvData(){
 // ── GOOGLE SHEET SYNC ────────────────────────────
 let sheetRows = [], sheetHeaders = [];
 
+function extractSheetId(url){
+  if(url.includes("/forms/d/e/")){
+    return "";
+  }
+  const sheetMatch = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+  if(sheetMatch) return sheetMatch[1];
+  const directMatch = url.match(/\/d\/([a-zA-Z0-9-_]+)(?:\/|$|\?)/);
+  return directMatch ? directMatch[1] : "";
+}
+
 async function syncGoogleForm(){
   const urlInput = document.getElementById("gsheetUrl");
   let url = urlInput?.value.trim();
-  if(!url){ showToast("Paste a Google Sheet CSV URL first","error"); return; }
-
-  // Auto-convert normal Google Sheets share URL to CSV export URL
-  if(url.includes("docs.google.com/spreadsheets") && !url.includes("export?format=csv")){
-    const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
-    if(match){
-      const sheetId = match[1];
-      const gidMatch = url.match(/gid=(\d+)/);
-      const gid = gidMatch ? gidMatch[1] : "0";
-      url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
-      urlInput.value = url;
-    }
+  if(!url){ showToast("Paste a Google Sheet URL first","error"); return; }
+  if(url.includes("/forms/d/e/")){
+    const status = document.getElementById("syncStatus");
+    status.innerHTML = `<span style="color:var(--red)">❌ This is a Google Form link, not a Google Sheets response spreadsheet.</span>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:6px">
+        Open the form, go to Responses → click the spreadsheet icon → copy the sheet URL here.
+      </div>`;
+    return;
   }
 
-  // Save URL
+  const sheetId = extractSheetId(url);
+  if(!sheetId){ showToast("Enter a valid Google Sheets URL","error"); return; }
+  currentSheetId = sheetId;
   localStorage.setItem("gsheet_url", url);
 
   const status = document.getElementById("syncStatus");
-  status.innerHTML = `<span style="color:var(--accent)">⏳ Fetching data from Google Sheets...</span>`;
+  status.innerHTML = `<span style="color:var(--accent)">⏳ Fetching data from backend...</span>`;
 
   try{
-    // Try multiple CORS proxies in order
-    const proxies = [
-      `https://corsproxy.io/?${encodeURIComponent(url)}`,
-      `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-      `https://cors-anywhere.herokuapp.com/${url}`
-    ];
+    const response = await api(`/google-forms/responses?sheet_id=${encodeURIComponent(sheetId)}`);
+    if(!response.responses || !response.responses.length){ throw new Error("No rows found in the sheet"); }
 
-    let text = null;
-    for(const proxyUrl of proxies){
-      try{
-        const res = await fetch(proxyUrl);
-        if(res.ok){ text = await res.text(); break; }
-      }catch(e){ continue; }
-    }
-    if(!text) throw new Error("All CORS proxies failed. Make sure your Google Sheet is published publicly as CSV.");
+    sheetHeaders = Object.keys(response.responses[0]);
+    sheetRows = response.responses.map(row => sheetHeaders.map(h => row[h] || ""));
 
-    // Parse CSV
-    const lines = text.trim().split("\n").map(line => {
-      // Handle quoted CSV values
-      const result = [];
-      let cur = "", inQ = false;
-      for(let ch of line){
-        if(ch==='"' && !inQ){ inQ=true; continue; }
-        if(ch==='"' && inQ){ inQ=false; continue; }
-        if(ch==="," && !inQ){ result.push(cur.trim()); cur=""; continue; }
-        cur += ch;
-      }
-      result.push(cur.trim());
-      return result;
-    });
-
-    if(lines.length < 2){ showToast("Sheet appears empty","error"); return; }
-
-    sheetHeaders = lines[0];
-    sheetRows = lines.slice(1).filter(r => r.some(c => c));
-
-    // Show preview
     const preview = document.getElementById("sheetPreview");
     const previewLabel = document.getElementById("previewLabel");
     const previewHead = document.getElementById("previewHead");
     const previewBody = document.getElementById("previewBody");
 
     previewLabel.textContent = `✅ Fetched ${sheetRows.length} responses. Preview (first 5 rows):`;
-    previewHead.innerHTML = `<tr>${sheetHeaders.map(h=>`<th style="background:rgba(255,255,255,0.04);padding:6px 10px;font-size:11px;color:var(--text-muted);white-space:nowrap">${h}</th>`).join("")}</tr>`;
-    previewBody.innerHTML = sheetRows.slice(0,5).map(r=>`<tr>${r.map(c=>`<td style="padding:5px 10px;border-top:1px solid var(--border);white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis">${c||"—"}</td>`).join("")}</tr>`).join("");
+    previewHead.innerHTML = `<tr>${sheetHeaders.map(h => `<th style="background:rgba(255,255,255,0.04);padding:6px 10px;font-size:11px;color:var(--text-muted);white-space:nowrap">${h}</th>`).join("")}</tr>`;
+    previewBody.innerHTML = sheetRows.slice(0,5).map(r => `<tr>${r.map(c => `<td style="padding:5px 10px;border-top:1px solid var(--border);white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis">${c||"—"}</td>`).join("")}</tr>`).join("");
     preview.style.display = "block";
 
-    // Show column mapping
     showColumnMapping();
     status.innerHTML = `<span style="color:var(--green)">✅ ${sheetRows.length} rows fetched. Map your columns below and click Import.</span>`;
 
   }catch(err){
     status.innerHTML = `<span style="color:var(--red)">❌ ${err.message}</span>
     <div style="font-size:12px;color:var(--text-muted);margin-top:6px">
-      Make sure your Google Sheet is <strong>published to web as CSV</strong>:<br>
-      Google Sheets → File → Share → Publish to web → Select sheet → CSV → Publish
+      Make sure your Google Sheet is published publicly and the link is a valid Google Sheets URL.
     </div>`;
   }
 }
@@ -1305,38 +1450,36 @@ async function importMappedData(){
 
   if(isNaN(nameCol)  || document.getElementById("map_name")?.value  === ""){ showToast("Please map the Name column","error");  return; }
   if(isNaN(emailCol) || document.getElementById("map_email")?.value === ""){ showToast("Please map the Email column","error"); return; }
+  if(!currentSheetId){ showToast("Fetch the sheet first before importing","error"); return; }
+
+  const fieldMap = {
+    name: sheetHeaders[nameCol],
+    email: sheetHeaders[emailCol],
+  };
+  if(phoneCol !== "" && phoneCol !== undefined){ fieldMap.phone = sheetHeaders[parseInt(phoneCol)]; }
+  if(skillCol !== "" && skillCol !== undefined){ fieldMap.skill = sheetHeaders[parseInt(skillCol)]; }
 
   const status = document.getElementById("syncStatus");
   status.innerHTML = `<span style="color:var(--accent)">⏳ Importing candidates...</span>`;
 
-  let imported = 0, skipped = 0, errors = 0;
+  try{
+    const result = await api("/google-forms/import-candidates","POST",{
+      sheet_id: currentSheetId,
+      sheet_name: "",
+      field_map: fieldMap,
+      status: "Pending",
+      skip_existing: true
+    });
 
-  for(const row of sheetRows){
-    const name  = row[nameCol]?.trim();
-    const email = row[emailCol]?.trim();
-    if(!name || !email){ skipped++; continue; }
+    status.innerHTML = `<span style="color:var(--green)">✅ Done! ${result.created.length} imported, ${result.skipped.length} skipped.</span>`;
+    showToast(`Imported ${result.created.length} candidates!`, "success");
 
-    const phone = phoneCol !== "" && phoneCol !== undefined ? (row[parseInt(phoneCol)]?.trim()||"") : "";
-    const skill = skillCol !== "" && skillCol !== undefined ? (row[parseInt(skillCol)]?.trim()||"") : "";
-
-    try{
-      await api("/candidates","POST",{name, email, phone, skill, resume:""});
-      imported++;
-    }catch(e){
-      // Skip duplicates silently
-      skipped++;
-    }
+    document.getElementById("columnMapSection").style.display = "none";
+    document.getElementById("sheetPreview").style.display = "none";
+    setTimeout(()=> renderCandidates(), 800);
+  }catch(err){
+    status.innerHTML = `<span style="color:var(--red)">❌ ${err.message}</span>`;
   }
-
-  status.innerHTML = `<span style="color:var(--green)">✅ Done! ${imported} imported, ${skipped} skipped (duplicates/empty rows)</span>`;
-  showToast(`Imported ${imported} candidates!`, "success");
-
-  // Hide mapping, refresh table
-  document.getElementById("columnMapSection").style.display = "none";
-  document.getElementById("sheetPreview").style.display = "none";
-
-  // Reload candidates table
-  setTimeout(()=> renderCandidates(), 800);
 }
 
 function clearSheetUrl(){
@@ -1364,7 +1507,7 @@ async function updateCandidate(id,status){
       }
       // Fallback: generate from name same way as backend
       if(!jjEmail){
-        const nm=c.name.toLowerCase().replace(/[^a-z ]/g,"").trim().split(" ");
+        const nm=c.name.toLowerCase().split("").filter(ch=>(ch>="a"&&ch<="z")||ch===" ").join("").trim().split(" ");
         jjEmail=nm.length>=2?`${nm[0]}.${nm[nm.length-1]}@jobjockey.in`:`${nm[0]}@jobjockey.in`;
       }
 
@@ -1433,15 +1576,24 @@ function setCandidateTab(tab){
 
   // Filter the table rows
   document.querySelectorAll("#candidateBody tr").forEach(row=>{
-    const statusCell = row.querySelectorAll("td")[4];
-    if(!statusCell){ row.style.display=""; return; }
-    const status = statusCell.textContent.trim();
     if(tab === "applicants"){
-      row.style.display = "";           // show all
+      row.style.display = "";
     } else {
-      row.style.display = status.includes("Approved") ? "" : "none";  // show only approved
+      // Check entire row text for Approved
+      row.style.display = row.textContent.includes("Approved") ? "" : "none";
     }
   });
+}
+
+async function revokeCredentials(id, name){
+  if(!confirm("Revoke login access for "+name+"?\n\nTheir candidate data will remain but they will not be able to login anymore."))return;
+  try{
+    await api("/candidates/"+id+"/credentials","DELETE");
+    showToast(name+"'s login access revoked. Candidate data kept.","success");
+    await loadAllUsers();
+    populateAssignDropdown();
+    renderCandidates();
+  }catch(e){showToast("Failed: "+e.message,"error");}
 }
 
 async function deleteCandidate(id,name){
@@ -1499,12 +1651,13 @@ async function renderTasks(){
   let data=[];
   try{data=await api("/tasks");}catch(e){showToast("Failed","error");return;}
   populateAssignDropdown();
+  populateProjectDropdown();
   document.getElementById("mainContent").innerHTML=`
   <div class="table-card">
     <div class="table-card-header"><h3>All Tasks</h3>
       <div style="display:flex;gap:8px">
         <select class="filter-select" onchange="filterCol('taskBody',4,this.value)"><option value="">All Status</option><option>Pending</option><option>In Progress</option><option>Completed</option></select>
-        ${canManage()?`<button class="btn-sm btn-accent" onclick="openModal('taskModal')">+ Create Task</button>`:""}
+        ${canManage()?`<button class="btn-sm btn-accent" onclick="populateAssignDropdown();populateProjectDropdown();openModal('taskModal')">+ Create Task</button>`:""}
       </div>
     </div>
     <table><thead><tr><th>Task</th><th>Assigned To</th><th>Project</th><th>Priority</th><th>Status</th><th>Deadline</th>${canManage()?"<th>Action</th>":""}</tr></thead>
@@ -1710,6 +1863,7 @@ async function deleteProject(id){
 // ATTENDANCE
 // ════════════════════════════════════════════
 async function renderAttendance(){
+  if(isIntern()){ await renderInternAttendance(); return; }
   const today=new Date().toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long"});
   const todayISO=new Date().toISOString().split("T")[0];
   let data=[];
@@ -1718,7 +1872,7 @@ async function renderAttendance(){
   document.getElementById("mainContent").innerHTML=`
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:13px;color:var(--text-muted)">📅 ${today}</div>
-    ${isIntern()?`<button class="btn-sm btn-accent" onclick="markMyAttendance()">✓ Mark Present Today</button>`:`<button class="btn-sm btn-outline" onclick="exportAttendance()">↓ Export CSV</button>`}
+    <button class="btn-sm btn-outline" onclick="exportAttendance()">↓ Export CSV</button>
   </div>
   <div class="attend-grid">
   ${members.map((u,i)=>{
@@ -1741,6 +1895,90 @@ async function renderAttendance(){
   }).join("")||`<div style="color:var(--text-muted)">No team members</div>`}
   </div>`;
 }
+
+// Intern-specific: personal attendance calendar
+let internAttDate=new Date();
+async function renderInternAttendance(){
+  let data=[];
+  try{data=await api("/attendance");}catch(e){}
+  const todayISO=new Date().toISOString().split("T")[0];
+  const todayRec=data.find(a=>a.date===todayISO);
+  const todayStatus=todayRec?todayRec.status:"Not Marked";
+
+  // Build map for quick lookup
+  const attMap={};
+  data.forEach(a=>attMap[a.date]=a.status);
+
+  // Calendar for internAttDate month
+  const yr=internAttDate.getFullYear();
+  const mo=internAttDate.getMonth();
+  const firstDay=new Date(yr,mo,1).getDay(); // 0=Sun
+  const daysInMonth=new Date(yr,mo+1,0).getDate();
+  const monthName=internAttDate.toLocaleDateString("en-IN",{month:"long",year:"numeric"});
+
+  // Stats for current month
+  const monthPrefix=`${yr}-${String(mo+1).padStart(2,"0")}`;
+  const monthData=data.filter(a=>a.date.startsWith(monthPrefix));
+  const mp=monthData.filter(a=>a.status==="Present").length;
+  const ma=monthData.filter(a=>a.status==="Absent").length;
+  const ml=monthData.filter(a=>a.status==="Leave").length;
+
+  // Build calendar cells
+  let cells="";
+  const dayHeaders=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d=>`<div class="cal-day-header">${d}</div>`).join("");
+  for(let i=0;i<firstDay;i++) cells+=`<div class="cal-day empty"></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const iso=`${yr}-${String(mo+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const isToday=iso===todayISO;
+    const st=attMap[iso];
+    const bg=st==="Present"?"background:rgba(16,185,129,0.15);border-color:var(--green)":
+               st==="Absent"?"background:rgba(239,68,68,0.12);border-color:var(--red)":
+               st==="Leave"?"background:rgba(139,92,246,0.12);border-color:var(--purple)":"";
+    const dot=st==="Present"?`<div style="margin-top:4px;font-size:18px;line-height:1">✓</div><div style="font-size:10px;color:var(--green)">Present</div>`:
+               st==="Absent"?`<div style="margin-top:4px;font-size:18px;line-height:1">✗</div><div style="font-size:10px;color:var(--red)">Absent</div>`:
+               st==="Leave"?`<div style="margin-top:4px;font-size:18px;line-height:1">🏖</div><div style="font-size:10px;color:var(--purple)">Leave</div>`:"";
+    cells+=`<div class="cal-day ${isToday?"today":""}" style="${bg}text-align:center;min-height:70px;display:flex;flex-direction:column;align-items:center;padding:6px 4px">
+      <div class="cal-date" style="${isToday?"color:var(--accent);font-weight:700":""}">${d}</div>
+      ${dot}
+    </div>`;
+  }
+
+  document.getElementById("mainContent").innerHTML=`
+  <!-- Today status + mark button -->
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:13px;color:var(--text-muted)">📅 Today: <strong style="color:${todayStatus==="Present"?"var(--green)":todayStatus==="Absent"?"var(--red)":todayStatus==="Leave"?"var(--purple)":"var(--text-muted)"}">${todayStatus}</strong></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span style="font-size:12px;padding:4px 10px;border-radius:20px;background:rgba(16,185,129,0.1);color:var(--green);border:1px solid rgba(16,185,129,0.25)">✓ ${mp} Present</span>
+        <span style="font-size:12px;padding:4px 10px;border-radius:20px;background:rgba(239,68,68,0.1);color:var(--red);border:1px solid rgba(239,68,68,0.25)">✗ ${ma} Absent</span>
+        <span style="font-size:12px;padding:4px 10px;border-radius:20px;background:rgba(139,92,246,0.1);color:var(--purple);border:1px solid rgba(139,92,246,0.25)">🏖 ${ml} Leave</span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      ${todayStatus==="Not Marked"?`<button class="btn-sm btn-accent" onclick="markMyAttendance()">✓ Mark Present Today</button>`:`<span style="font-size:13px;color:var(--text-muted)">Already marked for today</span>`}
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input id="leaveDateInput" type="date" value="${todayISO}" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 10px;color:var(--text);font-size:13px;">
+        <button class="btn-sm btn-outline" onclick="markMyLeave()">🏖 Request Leave</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Calendar -->
+  <div class="chart-card">
+    <div class="cal-controls">
+      <div class="cal-month">${monthName}</div>
+      <div class="cal-nav">
+        <button onclick="internAttDate=new Date(internAttDate.getFullYear(),internAttDate.getMonth()-1,1);renderInternAttendance()">‹</button>
+        <button onclick="internAttDate=new Date();renderInternAttendance()">Today</button>
+        <button onclick="internAttDate=new Date(internAttDate.getFullYear(),internAttDate.getMonth()+1,1);renderInternAttendance()">›</button>
+      </div>
+    </div>
+    <div class="cal-grid">
+      ${dayHeaders}
+      ${cells}
+    </div>
+  </div>`;
+}
 async function markAttendanceFor(email,status,date){
   try{await api("/attendance","POST",{email,status,date});showToast(email.split("@")[0]+" → "+status,"success");renderAttendance();}
   catch(e){showToast("Failed: "+e.message,"error");}
@@ -1749,6 +1987,21 @@ async function markMyAttendance(){
   const date=new Date().toISOString().split("T")[0];
   try{await api("/attendance","POST",{status:"Present",date});showToast("Attendance marked!","success");renderAttendance();}
   catch(e){showToast("Failed: "+e.message,"error");}
+}
+async function markMyLeave(){
+  const input = document.getElementById("leaveDateInput");
+  if(!input) return showToast("Leave date input not found","error");
+  const date = input.value;
+  if(!date) return showToast("Choose a date for leave","error");
+  const today = new Date().toISOString().split("T")[0];
+  if(date < today) return showToast("Select today or a future date for leave","error");
+  try{
+    await api("/attendance","POST",{status:"Leave",date});
+    showToast(`Leave requested for ${date}`,"success");
+    renderAttendance();
+  }catch(e){
+    showToast("Failed: "+e.message,"error");
+  }
 }
 async function exportAttendance(){
   try{
@@ -2026,19 +2279,39 @@ async function exportProductivity(){
 // CHAT
 // ════════════════════════════════════════════
 function renderChat(){
+  document.getElementById("mainContent").classList.add("chat-mode");
   document.getElementById("mainContent").innerHTML=`
   <div class="chat-layout">
+
+    <!-- Contact list sidebar -->
     <div class="chat-sidebar">
-      <div class="chat-sidebar-header">Messages</div>
-      <div class="chat-search"><input placeholder="Search..." id="chatSearchInput" oninput="filterChats(this.value)"></div>
-      <div class="chat-list" id="chatList"><div style="padding:16px;color:var(--text-muted);font-size:13px">Loading...</div></div>
+      <div class="chat-sidebar-header">💬 Messages</div>
+      <div class="chat-search">
+        <input placeholder="🔍 Search contacts..." id="chatSearchInput" oninput="filterChats(this.value)">
+      </div>
+      <div class="chat-list" id="chatList">
+        <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">Loading contacts...</div>
+      </div>
     </div>
+
+    <!-- Chat area -->
     <div class="chat-area" id="chatArea">
-      <div class="chat-header"><div class="chat-header-info"><div class="cn">Select a contact</div><div class="cs">to start chatting</div></div></div>
-      <div class="chat-messages" id="chatMsgs"></div>
+      <div class="chat-header" id="chatHeader">
+        <div class="chat-header-info">
+          <div class="cn" style="color:var(--text-muted);font-weight:500">Select a contact to start chatting</div>
+        </div>
+      </div>
+      <div class="chat-empty" id="chatEmpty">
+        <div class="ce-icon">💬</div>
+        <h4>No conversation open</h4>
+        <p>Pick a contact from the left to start messaging</p>
+      </div>
+      <div class="chat-messages" id="chatMsgs" style="display:none"></div>
       <div class="chat-input-area">
-        <input class="chat-input" id="chatInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendMessage()">
-        <button class="send-btn" onclick="sendMessage()"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+        <input class="chat-input" id="chatInput" placeholder="Type a message and press Enter…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}" disabled>
+        <button class="send-btn" onclick="sendMessage()" id="sendBtn" disabled style="opacity:.4">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
       </div>
     </div>
   </div>`;
@@ -2057,8 +2330,24 @@ async function openChatWithUser(uid,name){
   selectedReceiverId=uid;
   document.querySelectorAll(".chat-contact").forEach(el=>el.classList.remove("active"));
   const el=document.getElementById("cc_"+uid);if(el)el.classList.add("active");
-  const hdr=document.querySelector("#chatArea .chat-header");
-  if(hdr)hdr.innerHTML=`<div class="chat-header-info"><div class="cn">${name}</div><div class="cs">● Active now</div></div>`;
+
+  // Update header
+  const hdr=document.getElementById("chatHeader");
+  const color=COLORS[allUsers.findIndex(u=>u.id===uid)%COLORS.length]||"#f59e0b";
+  if(hdr)hdr.innerHTML=`
+    <div class="cav" style="background:${color}22;color:${color};border:2px solid ${color}44">${name.slice(0,2).toUpperCase()}</div>
+    <div class="chat-header-info"><div class="cn">${name}</div><div class="cs">● Active</div></div>`;
+
+  // Show messages, hide empty state
+  const emptyEl=document.getElementById("chatEmpty");
+  const msgsEl=document.getElementById("chatMsgs");
+  const inputEl=document.getElementById("chatInput");
+  const btnEl=document.getElementById("sendBtn");
+  if(emptyEl) emptyEl.style.display="none";
+  if(msgsEl)  msgsEl.style.display="flex";
+  if(inputEl){ inputEl.disabled=false; inputEl.focus(); }
+  if(btnEl){  btnEl.disabled=false; btnEl.style.opacity="1"; }
+
   await fetchMessages(uid);
 }
 async function fetchMessages(uid){
@@ -2078,7 +2367,7 @@ async function fetchMessages(uid){
         </div>
       </div>`;
     }).join("");
-    box.scrollTop=box.scrollHeight;
+    setTimeout(()=>{ box.scrollTop=box.scrollHeight; },10);
   }catch(e){}
 }
 
@@ -2107,6 +2396,98 @@ function connectWS(uid){
   }catch(e){}
 }
 setInterval(()=>{if(selectedReceiverId&&document.getElementById("chatMsgs"))fetchMessages(selectedReceiverId);},4000);
+
+// ─── NOTIFICATION POLLING & POPUP ────────────
+let _lastNotifCount=0;
+let _notifPopupOpen=false;
+
+function playNotifSound(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const osc=ctx.createOscillator();
+    const gain=ctx.createGain();
+    osc.connect(gain);gain.connect(ctx.destination);
+    osc.frequency.setValueAtTime(880,ctx.currentTime);
+    osc.frequency.setValueAtTime(660,ctx.currentTime+0.12);
+    gain.gain.setValueAtTime(0.18,ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.35);
+    osc.start(ctx.currentTime);osc.stop(ctx.currentTime+0.35);
+  }catch(e){}
+}
+
+async function pollNotifications(){
+  if(!token) return;
+  try{
+    const data=await api("/notifications");
+    const unread=data.filter(n=>!n.read).length;
+    const bell=document.getElementById("notifBellBtn");
+    const dot=document.getElementById("notifDot");
+    if(bell){
+      bell.classList.toggle("notif-bell-active",unread>0);
+    }
+    if(dot){
+      dot.classList.toggle("visible",unread>0);
+    }
+    // Play sound and show mini-toast for new notifications
+    if(unread>_lastNotifCount && _lastNotifCount>=0 && document.visibilityState!=="hidden"){
+      playNotifSound();
+      const newest=data.find(n=>!n.read);
+      if(newest){
+        showToast(`🔔 ${newest.title}`,"info");
+      }
+    }
+    _lastNotifCount=unread;
+    // Update popup list if open
+    if(_notifPopupOpen) buildNotifPopupList(data);
+  }catch(e){}
+}
+
+function buildNotifPopupList(data){
+  const list=document.getElementById("notifPopupList");
+  if(!list) return;
+  const recent=data.slice(0,8);
+  if(!recent.length){
+    list.innerHTML=`<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">No notifications yet</div>`;
+    return;
+  }
+  list.innerHTML=recent.map(n=>`
+    <div class="notif-popup-item ${n.read?"":"unread"}" onclick="markNotifRead(${n.id})">
+      <div class="notif-popup-title">${n.icon||"🔔"} ${n.title}</div>
+      <div class="notif-popup-body">${n.body||""}</div>
+    </div>`).join("");
+}
+
+async function markNotifRead(id){
+  try{await api("/notifications/"+id+"/read","PATCH");}catch(e){}
+  pollNotifications();
+}
+
+async function toggleNotifPopup(){
+  const popup=document.getElementById("notifPopup");
+  if(!popup) return;
+  _notifPopupOpen=!_notifPopupOpen;
+  popup.classList.toggle("open",_notifPopupOpen);
+  if(_notifPopupOpen){
+    try{const data=await api("/notifications");buildNotifPopupList(data);}catch(e){}
+  }
+}
+
+function closeNotifPopup(){
+  _notifPopupOpen=false;
+  const popup=document.getElementById("notifPopup");
+  if(popup) popup.classList.remove("open");
+}
+
+// Close popup when clicking outside
+document.addEventListener("click",function(e){
+  const popup=document.getElementById("notifPopup");
+  const bell=document.getElementById("notifBellBtn");
+  if(_notifPopupOpen && popup && bell && !popup.contains(e.target) && !bell.contains(e.target)){
+    closeNotifPopup();
+  }
+});
+
+setInterval(pollNotifications, 30000);
 
 // ════════════════════════════════════════════
 // GROUPS
@@ -2168,16 +2549,17 @@ async function renderGroups(){
   </div>`:""}
   <div class="groups-grid" id="groupsGrid"><div style="color:var(--text-muted)">Loading...</div></div>`;
 
-  // Initially hide all members — show only when typing
+  // Initially hide all members — show only when typing (only exists for admin/superadmin)
   document.querySelectorAll("#gMemberDropdown label").forEach(l=>l.style.display="none");
-  document.getElementById("gMemberSearch").addEventListener("input", function(){
+  const gSearchEl=document.getElementById("gMemberSearch");
+  if(gSearchEl) gSearchEl.addEventListener("input", function(){
     const q=this.value.trim().toLowerCase();
     document.querySelectorAll("#gMemberDropdown label").forEach(l=>{
       l.style.display=q&&l.textContent.toLowerCase().includes(q)?"":"none";
     });
   });
 
-  // Update member count on checkbox change
+  // Update member count on checkbox change (only for admin/superadmin)
   document.querySelectorAll(".gMemberCheck").forEach(cb=>{
     cb.addEventListener("change",()=>{
       const count=document.querySelectorAll(".gMemberCheck:checked").length;
@@ -2234,9 +2616,17 @@ function selectAllGroupMembers(select){
 
 async function loadGroups(){
   try{
-    const data=await api("/groups");
+    let data=await api("/groups");
+    // Intern sees only groups they are in
+    if(isIntern()){
+      const myEmail=localStorage.getItem("jj_email")||"";
+      data=data.filter(g=>{let m=[];try{m=JSON.parse(g.members||"[]");}catch(e){}return m.includes(myEmail);});
+    }
     const grid=document.getElementById("groupsGrid");if(!grid)return;
-    if(!data.length){grid.innerHTML=`<div style="color:var(--text-muted);padding:20px">No groups yet. Create one above!</div>`;return;}
+    if(!data.length){
+      grid.innerHTML=`<div style="color:var(--text-muted);padding:20px">${isIntern()?"You have not been added to any group yet.":"No groups yet. Create one above!"}</div>`;
+      return;
+    }
     grid.innerHTML=data.map((g,i)=>{
       let members=[];
       try{members=JSON.parse(g.members||"[]");}catch(e){}
@@ -2779,15 +3169,30 @@ async function renderMyTasks(){
 
 
 // ════════════════════════════════════════════
-// EMAIL SETTINGS PAGE
+// SETTINGS PAGE (Email + Password)
 // ════════════════════════════════════════════
-async function renderSettings(){
+async function renderSettings(tab){
+  // Intern only sees password change
+  if(isIntern()){
+    renderSettingsTab("password");
+    return;
+  }
+  tab=tab||"email";
   const savedSvc  = localStorage.getItem("ejs_service")  || "";
   const savedTpl  = localStorage.getItem("ejs_template") || "";
   const savedKey  = localStorage.getItem("ejs_pubkey")   || "";
   const configured = savedSvc && savedTpl && savedKey;
 
-  document.getElementById("mainContent").innerHTML=`
+  // Tab switcher header
+  const tabBar=`
+  <div style="display:flex;gap:4px;margin-bottom:20px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:4px;width:fit-content">
+    <button onclick="renderSettings('email')" style="padding:8px 20px;border-radius:7px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;${tab==="email"?"background:var(--accent);color:#000":"background:transparent;color:var(--text-muted)"}">📧 Email</button>
+    <button onclick="renderSettings('password')" style="padding:8px 20px;border-radius:7px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;${tab==="password"?"background:var(--accent);color:#000":"background:transparent;color:var(--text-muted)"}">🔑 Password</button>
+  </div>`;
+
+  if(tab==="password"){ renderSettingsTab("password",tabBar); return; }
+
+  document.getElementById("mainContent").innerHTML=tabBar+`
   <!-- EmailJS Config -->
   <div class="table-card" style="max-width:620px;margin-bottom:20px">
     <div class="table-card-header">
@@ -2862,6 +3267,43 @@ async function renderSettings(){
       </div>
       <button class="btn-sm btn-accent" onclick="sendCustomEmail()" style="align-self:flex-start">📤 Send Email</button>
       <div id="mailStatus" style="font-size:13px"></div>
+    </div>
+  </div>`;
+}
+
+// Renders the password-change tab, optionally prepending a tab bar
+function renderSettingsTab(tab, prepend=""){
+  const isInternUser=isIntern();
+  const tabBar=isInternUser?"":prepend||`
+  <div style="display:flex;gap:4px;margin-bottom:20px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:4px;width:fit-content">
+    <button onclick="renderSettings('email')" style="padding:8px 20px;border-radius:7px;border:none;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--text-muted)">📧 Email</button>
+    <button onclick="renderSettings('password')" style="padding:8px 20px;border-radius:7px;border:none;font-size:13px;font-weight:600;cursor:pointer;background:var(--accent);color:#000">🔑 Password</button>
+  </div>`;
+  document.getElementById("mainContent").innerHTML=tabBar+`
+  <div class="table-card" style="max-width:480px">
+    <div class="table-card-header"><h3>🔑 Change Password</h3></div>
+    <div style="padding:24px;display:flex;flex-direction:column;gap:16px">
+      <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--text-muted)">
+        Logged in as <strong style="color:var(--accent)">${currentUser}</strong> (${currentRole})
+      </div>
+      <div class="field">
+        <label>Current Password</label>
+        <input type="password" id="cpCurrent" placeholder="Enter current password"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;box-sizing:border-box">
+      </div>
+      <div class="field">
+        <label>New Password</label>
+        <input type="password" id="cpNew" placeholder="Enter new password (min 4 chars)"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;box-sizing:border-box">
+      </div>
+      <div class="field">
+        <label>Confirm New Password</label>
+        <input type="password" id="cpConfirm" placeholder="Re-enter new password"
+          onkeydown="if(event.key==='Enter')changePassword()"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;box-sizing:border-box">
+      </div>
+      <button class="btn-sm btn-accent" onclick="changePassword()" style="align-self:flex-start;padding:10px 24px">🔑 Update Password</button>
+      <div id="cpStatus" style="font-size:13px"></div>
     </div>
   </div>`;
 }
@@ -2970,38 +3412,8 @@ function openSendEmailModal(toEmail, name){
 // CHANGE PASSWORD
 // ════════════════════════════════════════════
 async function renderChangePassword(){
-  document.getElementById("mainContent").innerHTML=`
-  <div class="table-card" style="max-width:480px">
-    <div class="table-card-header"><h3>🔑 Change Password</h3></div>
-    <div style="padding:24px;display:flex;flex-direction:column;gap:16px">
-
-      <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--text-muted)">
-        Logged in as <strong style="color:var(--accent)">${currentUser}</strong> (${currentRole})
-      </div>
-
-      <div class="field">
-        <label>Current Password</label>
-        <input type="password" id="cpCurrent" placeholder="Enter current password"
-          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;box-sizing:border-box">
-      </div>
-      <div class="field">
-        <label>New Password</label>
-        <input type="password" id="cpNew" placeholder="Enter new password (min 4 chars)"
-          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;box-sizing:border-box">
-      </div>
-      <div class="field">
-        <label>Confirm New Password</label>
-        <input type="password" id="cpConfirm" placeholder="Re-enter new password"
-          onkeydown="if(event.key==='Enter')changePassword()"
-          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;box-sizing:border-box">
-      </div>
-
-      <button class="btn-sm btn-accent" onclick="changePassword()" style="align-self:flex-start;padding:10px 24px">
-        🔑 Update Password
-      </button>
-      <div id="cpStatus" style="font-size:13px"></div>
-    </div>
-  </div>`;
+  // Redirect to the password tab inside settings
+  renderSettings("password");
 }
 
 async function changePassword(){
@@ -3032,6 +3444,124 @@ async function changePassword(){
   }catch(e){
     status.innerHTML = `<span style="color:var(--red)">❌ ${e.message}</span>`;
     showToast("Failed: "+e.message,"error");
+  }
+}
+
+
+// ── ADD CANDIDATE MANUALLY ────────────────────
+function openAddCandidateModal(){
+  const ex=document.getElementById("addCandModal"); if(ex)ex.remove();
+  const modal=document.createElement("div");
+  modal.id="addCandModal";
+  modal.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:1000;padding:16px";
+  modal.innerHTML=`
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:540px;box-shadow:0 24px 64px rgba(0,0,0,0.5);max-height:90vh;overflow-y:auto">
+    <div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <h3 style="margin:0;font-size:16px;font-weight:700">+ Add Candidate</h3>
+      <button onclick="document.getElementById('addCandModal').remove()" style="background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div style="padding:20px 24px;display:flex;flex-direction:column;gap:14px">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field" style="margin:0">
+          <label>Full Name *</label>
+          <input id="acName" placeholder="e.g. Rahul Sharma"
+            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;box-sizing:border-box">
+        </div>
+        <div class="field" style="margin:0">
+          <label>Email *</label>
+          <input id="acEmail" type="email" placeholder="rahul@gmail.com"
+            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;box-sizing:border-box">
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field" style="margin:0">
+          <label>Phone</label>
+          <input id="acPhone" placeholder="9876543210"
+            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;box-sizing:border-box">
+        </div>
+        <div class="field" style="margin:0">
+          <label>Skills / Domain</label>
+          <input id="acSkill" placeholder="e.g. React JS, Python"
+            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;box-sizing:border-box">
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field" style="margin:0">
+          <label>State</label>
+          <input id="acState" placeholder="e.g. Maharashtra"
+            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;box-sizing:border-box">
+        </div>
+        <div class="field" style="margin:0">
+          <label>College / University</label>
+          <input id="acCollege" placeholder="e.g. MIT Pune"
+            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;box-sizing:border-box">
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field" style="margin:0">
+          <label>Education Domain</label>
+          <input id="acEdu" placeholder="e.g. Computer Science"
+            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;box-sizing:border-box">
+        </div>
+        <div class="field" style="margin:0">
+          <label>Internship Duration</label>
+          <select id="acDuration" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px">
+            <option value="">-- Select --</option>
+            <option>1 Month</option>
+            <option>2 Months</option>
+            <option>3 Months</option>
+            <option>4 Months</option>
+            <option>6 Months</option>
+            <option>1 Year</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field" style="margin:0">
+        <label>Resume Link (optional)</label>
+        <input id="acResume" placeholder="https://drive.google.com/..."
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;box-sizing:border-box">
+      </div>
+
+      <div id="acStatus" style="font-size:13px"></div>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
+        <button class="btn-sm btn-outline" onclick="document.getElementById('addCandModal').remove()">Cancel</button>
+        <button class="btn-sm btn-accent" onclick="submitAddCandidate()">+ Add Candidate</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+}
+
+async function submitAddCandidate(){
+  const name  = document.getElementById("acName")?.value.trim();
+  const email = document.getElementById("acEmail")?.value.trim();
+  if(!name) { showToast("Enter candidate name","error"); return; }
+  if(!email){ showToast("Enter candidate email","error"); return; }
+  const status = document.getElementById("acStatus");
+  status.innerHTML=`<span style="color:var(--accent)">⏳ Adding...</span>`;
+  try{
+    await api("/candidates","POST",{
+      name,
+      email,
+      phone:     document.getElementById("acPhone")?.value||"",
+      skill:     document.getElementById("acSkill")?.value||"",
+      state:     document.getElementById("acState")?.value||"",
+      college:   document.getElementById("acCollege")?.value||"",
+      edu_domain:document.getElementById("acEdu")?.value||"",
+      duration:  document.getElementById("acDuration")?.value||"",
+      resume:    document.getElementById("acResume")?.value||""
+    });
+    showToast(name+" added as candidate!","success");
+    document.getElementById("addCandModal").remove();
+    renderCandidates();
+  }catch(e){
+    status.innerHTML=`<span style="color:var(--red)">❌ ${e.message}</span>`;
   }
 }
 
@@ -3067,6 +3597,8 @@ window.onload=async ()=>{
       try{
         initApp();
         connectWS(currentUserId);
+        _lastNotifCount=-1;
+        setTimeout(pollNotifications,1200);
         document.getElementById("appLayout").classList.remove("hidden");
       }catch(e){
         console.log("initApp failed:", e);

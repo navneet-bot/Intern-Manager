@@ -1,7 +1,7 @@
 """Pydantic schemas for request/response validation"""
 
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, Dict
 from datetime import datetime
 
 
@@ -141,6 +141,14 @@ class CandidateOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class GoogleFormImportRequest(BaseModel):
+    sheet_id: str
+    sheet_name: Optional[str] = None
+    field_map: Optional[Dict[str, str]] = None
+    status: Optional[str] = "Pending"
+    skip_existing: Optional[bool] = True
 
 
 # ─── ATTENDANCE ──────────────────────────────────

@@ -5,11 +5,13 @@ Roles: admin (boss) > super_admin > intern
 
 from fastapi import FastAPI, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from jose import jwt, JWTError
-from typing import Optional, List
-import json, re, os, smtplib
+from typing import Optional, List, Dict, Any
+from pathlib import Path
+import csv, json, re, os, smtplib, urllib.parse, urllib.request
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -21,11 +23,22 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Job Jockey API", version="3.1.0")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5500",
+        "http://127.0.0.1:5500",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+        "http://localhost:8080",
+        "http://127.0.0.1:8080",
+        "null",  # file:// protocol (opening HTML directly from disk)
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.mount("/static", StaticFiles(directory=Path(__file__).resolve().parent), name="static")
 
 SECRET_KEY    = "JOBJOCKEY_SECRET_2025"
 ALGORITHM     = "HS256"
@@ -119,9 +132,27 @@ def send_welcome_email(to_email: str, name: str, jj_email: str, password: str):
     except Exception as e:
         print(f"❌ Email failed: {e}")
 
-# ════════════════════════════════════════════════
-# HEALTH
-# ════════════════════════════════════════════════
+
+def fetch_google_form_responses(sheet_id: str, sheet_name: Optional[str] = None) -> List[Dict[str, str]]:
+    if not sheet_id:
+        raise ValueError("sheet_id is required")
+    sheet_name_param = f"&sheet={urllib.parse.quote(sheet_name)}" if sheet_name else ""
+    url = f"https://docs.google.com/spreadsheets/d/{urllib.parse.quote(sheet_id)}/gviz/tq?tqx=out:csv{sheet_name_param}"
+    try:
+        with urllib.request.urlopen(url, timeout=20) as response:
+            if response.status != 200:
+                raise ValueError(f"Google Sheets request failed with status {response.status}")
+            text = response.read().decode("utf-8")
+    except Exception as exc:
+        raise ValueError(f"Failed to fetch Google Forms responses: {exc}")
+
+    lines = text.splitlines()
+    if not lines:
+        return []
+    reader = csv.DictReader(lines)
+    return [dict((k, (v or "").strip()) for k, v in row.items()) for row in reader]
+
+
 @app.get("/")
 def root(): return {"status": "Job Jockey API running ✅", "version": "3.1"}
 
@@ -280,6 +311,58 @@ def add_candidate(data: schemas.CandidateCreate, db: Session = Depends(get_db)):
 def get_candidates(db: Session = Depends(get_db), user=Depends(require_admin)):
     return db.query(models.Candidate).all()
 
+@app.get("/google-forms/responses")
+def google_forms_responses(
+    sheet_id: str,
+    sheet_name: Optional[str] = None,
+    user=Depends(require_admin)
+):
+    if sheet_id.lower() == "e" or len(sheet_id) < 20:
+        raise HTTPException(400, "Invalid Google Sheets ID. Use the response spreadsheet URL, not the Google Form link.")
+    try:
+        rows = fetch_google_form_responses(sheet_id, sheet_name)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+    return {"sheet_id": sheet_id, "sheet_name": sheet_name or "default", "count": len(rows), "responses": rows}
+
+@app.post("/google-forms/import-candidates")
+def import_google_form_candidates(data: schemas.GoogleFormImportRequest, db: Session = Depends(get_db), user=Depends(require_admin)):
+    try:
+        rows = fetch_google_form_responses(data.sheet_id, data.sheet_name)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+
+    field_map = data.field_map or {}
+    created = []
+    skipped = []
+    for row in rows:
+        name = row.get(field_map.get("name", "Name"), "").strip()
+        email = row.get(field_map.get("email", "Email"), "").strip()
+        if not name or not email:
+            skipped.append({"reason": "missing name or email", "row": row})
+            continue
+        if data.skip_existing and db.query(models.Candidate).filter(models.Candidate.email == email).first():
+            skipped.append({"reason": "email exists", "email": email})
+            continue
+        candidate = models.Candidate(
+            name=name,
+            email=email,
+            phone=row.get(data.field_map.get("phone", "Phone"), "").strip(),
+            skill=row.get(data.field_map.get("skill", "Skill"), "").strip(),
+            state=row.get(data.field_map.get("state", "State"), "").strip(),
+            college=row.get(data.field_map.get("college", "College"), "").strip(),
+            edu_domain=row.get(data.field_map.get("edu_domain", "Education Domain"), "").strip(),
+            duration=row.get(data.field_map.get("duration", "Duration"), "").strip(),
+            resume=row.get(data.field_map.get("resume", "Resume"), "").strip(),
+            status=data.status or "Pending"
+        )
+        db.add(candidate)
+        db.commit()
+        db.refresh(candidate)
+        created.append({"id": candidate.id, "name": candidate.name, "email": candidate.email})
+
+    return {"created": created, "skipped": skipped, "total_rows": len(rows)}
+
 @app.patch("/candidates/{cid}", response_model=schemas.CandidateOut)
 def update_candidate(cid: int, data: schemas.CandidateUpdate, db: Session = Depends(get_db), user=Depends(require_admin)):
     c = db.query(models.Candidate).filter(models.Candidate.id == cid).first()
@@ -319,21 +402,36 @@ def update_candidate(cid: int, data: schemas.CandidateUpdate, db: Session = Depe
 
     return c
 
-@app.delete("/candidates/{cid}")
-def delete_candidate(cid: int, db: Session = Depends(get_db), user=Depends(require_boss)):
+@app.delete("/candidates/{cid}/credentials")
+def revoke_credentials(cid: int, db: Session = Depends(get_db), user=Depends(require_boss)):
+    """Delete only the login credentials — candidate data remains."""
     c = db.query(models.Candidate).filter(models.Candidate.id == cid).first()
     if not c: raise HTTPException(404, "Not found")
 
-    # Also delete the intern user account created from this candidate
+    deleted = False
     if c.resume and c.resume.startswith("LOGIN:"):
         jj_email = c.resume.replace("LOGIN:", "").split("|PASS:")[0]
         intern_user = db.query(models.User).filter(models.User.email == jj_email).first()
         if intern_user and intern_user.role == "intern":
             db.delete(intern_user)
+            deleted = True
 
+    # Clear credentials from resume field but keep candidate record
+    c.resume = ""
+    c.status = "Rejected"
+    db.commit()
+    return {"msg": f"Credentials revoked. Candidate data remains.", "deleted_user": deleted}
+
+@app.delete("/candidates/{cid}")
+def delete_candidate(cid: int, db: Session = Depends(get_db), user=Depends(require_boss)):
+    """Delete candidate record but keep their login account if they have one."""
+    c = db.query(models.Candidate).filter(models.Candidate.id == cid).first()
+    if not c: raise HTTPException(404, "Not found")
+
+    # Only delete candidate record — login account stays
     db.delete(c)
     db.commit()
-    return {"msg": "Candidate and login credentials deleted"}
+    return {"msg": "Candidate deleted. Login credentials remain active."}
 
 # ════════════════════════════════════════════════
 # ATTENDANCE
