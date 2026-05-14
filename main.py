@@ -21,6 +21,18 @@ from permissions import has_permission
 
 models.Base.metadata.create_all(bind=engine)
 
+# Auto-seed admin on first run
+def seed_admin():
+    db = SessionLocal()
+    try:
+        if not db.query(models.User).filter(models.User.role == "admin").first():
+            db.add(models.User(name="Navneet", email="navneet@jobjockey.in", password="123", role="admin", permissions="all"))
+            db.commit()
+    finally:
+        db.close()
+
+seed_admin()
+
 app = FastAPI(title="Job Jockey API", version="3.1.0")
 app.add_middleware(
     CORSMiddleware,
