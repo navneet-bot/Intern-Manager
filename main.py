@@ -582,9 +582,15 @@ def create_group(data: schemas.GroupCreate, db: Session = Depends(get_db), user=
     g = models.Group(**data.dict(), created_by=user.email)
     db.add(g); db.commit(); db.refresh(g); return g
 
-@app.get("/groups", response_model=List[schemas.GroupOut])
+@app.get("/groups")
 def get_groups(db: Session = Depends(get_db), user=Depends(get_current_user)):
-    return db.query(models.Group).all()
+    groups = db.query(models.Group).all()
+    result = []
+    for g in groups:
+        d = schemas.GroupOut.from_orm(g).dict()
+        d["message_count"] = db.query(models.GroupMessage).filter(models.GroupMessage.group_id == g.id).count()
+        result.append(d)
+    return result
 
 @app.patch("/groups/{gid}/members")
 def update_group_members(gid: int, data: dict, db: Session = Depends(get_db), user=Depends(require_permission("manage_groups"))):

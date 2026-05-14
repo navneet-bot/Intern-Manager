@@ -1390,6 +1390,8 @@ async function renderCandidates(){
     </div>
   </div>`;
   if(isAdmin()) filterCandidatesByStatus("");
+  // Restore saved tab
+  if(candidateTab !== "applicants") setCandidateTab(candidateTab);
 }
 
 function filterCandidatesByStatus(val){
@@ -1703,10 +1705,11 @@ async function updateCandidate(id,status){
   catch(e){showToast("Failed: "+e.message,"error");}
 }
 // ── CANDIDATE TAB SWITCH ─────────────────────
-let candidateTab = "applicants";
+let candidateTab = localStorage.getItem("jj_cand_tab") || "applicants";
 
 function setCandidateTab(tab){
   candidateTab = tab;
+  localStorage.setItem("jj_cand_tab", tab);
   const btnA = document.getElementById("tabApplicants");
   const btnB = document.getElementById("tabApplications");
   if(!btnA||!btnB) return;
@@ -2272,17 +2275,20 @@ async function exportReports(){
 // WORK LOGS
 // ════════════════════════════════════════════
 let _wlActiveEmail = null;
+let _allWorkLogs = [];
 async function renderWorkLogs(){
   const mc = document.getElementById("mainContent");
   mc.innerHTML = `<div style="padding:24px;color:var(--text-muted)">Loading…</div>`;
   let logs = [], users = [];
   try { logs = await api("/worklog"); } catch(e) {}
   try { users = await api("/users"); } catch(e) {}
+  _allWorkLogs = logs;
   const interns = users.filter(u => u.role !== "admin");
   if(!_wlActiveEmail || !interns.find(u=>u.email===_wlActiveEmail)){
     _wlActiveEmail = interns.length ? interns[0].email : null;
   }
   const filtered = _wlActiveEmail ? logs.filter(l => l.email === _wlActiveEmail) : logs;
+  const activeName = interns.find(u=>u.email===_wlActiveEmail)?.name||"All";
   mc.innerHTML = `
   <div style="margin-bottom:16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
     ${interns.map(u=>`
@@ -2296,8 +2302,12 @@ async function renderWorkLogs(){
   </div>
   <div class="table-card" style="overflow-x:auto">
     <div class="table-card-header">
-      <h3>${interns.find(u=>u.email===_wlActiveEmail)?.name||"All"} — Work Logs</h3>
-      <span style="font-size:12px;color:var(--text-muted)">${filtered.length} entr${filtered.length===1?'y':'ies'}</span>
+      <h3>${activeName} — Work Logs</h3>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span style="font-size:12px;color:var(--text-muted)">${filtered.length} entr${filtered.length===1?'y':'ies'}</span>
+        <button class="btn-sm btn-outline" onclick="exportWorkLogs('${_wlActiveEmail||''}','${activeName}')">↓ Export ${activeName}</button>
+        <button class="btn-sm btn-outline" onclick="exportWorkLogs('','All')">↓ Export All</button>
+      </div>
     </div>
     <table>
       <thead><tr>
@@ -2324,6 +2334,27 @@ async function renderWorkLogs(){
       </tbody>
     </table>
   </div>`;
+}
+
+function exportWorkLogs(email, name){
+  const rows = email ? _allWorkLogs.filter(l=>l.email===email) : _allWorkLogs;
+  if(!rows.length){ showToast("No logs to export","info"); return; }
+  const header = "Date,Name,Email,Login Time,Logout Time,Work Assigned,Work Did,Hours Worked,Issues,Resolved,Started At,Completed At";
+  const csv = [header, ...rows.map(l=>[
+    l.date||"", (l.name||"").replace(/,/g," "), l.email||"",
+    l.login_time||"", l.logout_time||"",
+    `"${(l.work_assigned||"").replace(/"/g,"'")}"`,
+    `"${(l.work_did||"").replace(/"/g,"'")}"`,
+    l.hours_worked||"",
+    `"${(l.issues||"").replace(/"/g,"'")}"`,
+    `"${(l.resolved||"").replace(/"/g,"'")}"`,
+    l.started_at||"", l.completed_at||""
+  ].join(","))].join("\n");
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download=(email?name.replace(/\s+/g,"_")+"_worklog":"all_worklogs")+".csv";
+  a.click();
+  showToast("Exported!","success");
 }
 
 // PRODUCTIVITY
@@ -2393,6 +2424,7 @@ async function renderProductivity(){
       <h3>Intern Performance Details</h3>
       <button class="btn-sm btn-outline" onclick="exportProductivity()">↓ Export CSV</button>
     </div>
+    <div style="overflow-x:auto">
     <table>
       <thead><tr>
         <th>Rank</th><th>Intern</th>
@@ -2447,6 +2479,7 @@ async function renderProductivity(){
       }).join("")}
       </tbody>
     </table>
+    </div>
   </div>`;
 
   // Draw charts
@@ -2876,9 +2909,12 @@ async function loadGroups(){
       let members=[];
       try{members=JSON.parse(g.members||"[]");}catch(e){}
       const memberUsers=members.map(email=>allUsers.find(u=>u.email===email)).filter(Boolean);
-      return `<div class="group-card" style="cursor:pointer" onclick="openGroupChat(${g.id},'${g.name.replace(/'/g,"\\'")}')">
+      const seen=parseInt(localStorage.getItem("jj_gc_seen_"+g.id)||"0");
+      const hasUnread=(g.message_count||0)>seen;
+      return `<div class="group-card" style="cursor:pointer;position:relative" onclick="openGroupChat(${g.id},'${g.name.replace(/'/g,"\\'")}')">
+        ${hasUnread?`<span style="position:absolute;top:10px;right:10px;width:10px;height:10px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 2px var(--surface)"></span>`:""}
         <div class="group-icon" style="background:${COLORS[i%COLORS.length]}18">${g.icon||"📁"}</div>
-        <h4>${g.name}</h4>
+        <h4>${g.name}${hasUnread?` <span style="font-size:11px;background:#ef4444;color:#fff;border-radius:20px;padding:1px 7px;font-weight:700;vertical-align:middle">${(g.message_count||0)-seen} new</span>`:""}</h4>
         <p style="color:var(--text-muted);font-size:12.5px">${g.description||""}</p>
         <div style="margin:10px 0;display:flex;flex-wrap:wrap;gap:4px">
           ${memberUsers.length?memberUsers.map(u=>`<span style="font-size:11px;padding:2px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--text-soft)">${u.name}</span>`).join(""):`<span style="font-size:11px;color:var(--text-muted)">No members yet</span>`}
@@ -2897,18 +2933,39 @@ async function loadGroups(){
 }
 
 // ── GROUP CHAT POPUP ─────────────────────────
+function _gcLinkify(text){
+  const esc=text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  return esc.replace(/(https?:\/\/[^\s<>"&]+)/g,'<a href="$1" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;word-break:break-all">$1</a>');
+}
+function _gcRenderMsg(msg){
+  if(msg.startsWith("[img:")){
+    const name=msg.slice(5,msg.indexOf("]"));
+    const data=msg.slice(msg.indexOf("]")+1);
+    return `<img src="${data}" alt="${name}" style="max-width:220px;max-height:160px;border-radius:8px;cursor:pointer;display:block" onclick="window.open('${data}','_blank')"><span style="font-size:11px;color:var(--text-muted)">${name}</span>`;
+  }
+  if(msg.startsWith("[file:")){
+    const name=msg.slice(6,msg.indexOf("]"));
+    const data=msg.slice(msg.indexOf("]")+1);
+    return `<a href="${data}" download="${name}" style="color:var(--accent);text-decoration:none;font-size:13px;display:flex;align-items:center;gap:6px"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>${name}</a>`;
+  }
+  return _gcLinkify(msg);
+}
+
 async function openGroupChat(gid, gname){
   const myEmail=localStorage.getItem("jj_email")||"";
   let messages=[];
   try{ messages=await api("/groups/"+gid+"/messages"); }catch(e){}
+  // Mark as seen
+  localStorage.setItem("jj_gc_seen_"+gid, messages.length.toString());
   const existing=document.getElementById("groupChatPopup");
   if(existing) existing.remove();
   const popup=document.createElement("div");
   popup.id="groupChatPopup";
   popup.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px";
   popup.onclick=function(e){ if(e.target===popup) popup.remove(); };
+  const gidS=gid; const gnameS=gname.replace(/'/g,"\\'");
   popup.innerHTML=`
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:480px;height:560px;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,0.5)">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:500px;height:580px;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,0.5)">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border)">
       <div style="font-weight:700;font-size:15px">💬 ${gname}</div>
       <button onclick="document.getElementById('groupChatPopup').remove()" style="background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;line-height:1">✕</button>
@@ -2920,19 +2977,41 @@ async function openGroupChat(gid, gname){
         const isMe=m.sender===myEmail;
         return `<div style="display:flex;flex-direction:column;align-items:${isMe?"flex-end":"flex-start"}">
           <span style="font-size:10.5px;color:var(--text-muted);margin-bottom:2px">${isMe?"You":name}</span>
-          <div style="max-width:80%;padding:8px 12px;border-radius:${isMe?"12px 12px 2px 12px":"12px 12px 12px 2px"};background:${isMe?"var(--accent)":"var(--surface2)"};color:${isMe?"#000":"var(--text)"};font-size:13px">${m.message}</div>
+          <div style="max-width:82%;padding:8px 12px;border-radius:${isMe?"12px 12px 2px 12px":"12px 12px 12px 2px"};background:${isMe?"var(--accent)":"var(--surface2)"};color:${isMe?"#000":"var(--text)"};font-size:13px;word-break:break-word">${_gcRenderMsg(m.message)}</div>
           <span style="font-size:10px;color:var(--text-muted);margin-top:2px">${m.sent_at?new Date(m.sent_at).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"}):""}</span>
         </div>`;
       }).join(""):`<div style="text-align:center;color:var(--text-muted);margin:auto;font-size:13px">No messages yet. Say hello! 👋</div>`}
     </div>
-    <div style="padding:12px 14px;border-top:1px solid var(--border);display:flex;gap:8px">
-      <input id="gcInput" placeholder="Type a message..." style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-size:13px;outline:none" onkeydown="if(event.key==='Enter')sendGroupMessage(${gid},'${gname.replace(/'/g,"\\'")}')">
-      <button onclick="sendGroupMessage(${gid},'${gname.replace(/'/g,"\\'")}')\" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:9px 16px;font-weight:700;cursor:pointer;font-size:13px">Send</button>
+    <div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center">
+      <label title="Attach file" style="cursor:pointer;color:var(--text-muted);display:flex;align-items:center;padding:6px;border-radius:8px;border:1px solid var(--border);background:var(--surface2)">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+        <input type="file" id="gcFileInput" style="display:none" onchange="gcAttachFile(${gidS},'${gnameS}')">
+      </label>
+      <input id="gcInput" placeholder="Type a message or paste a link…" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-size:13px;outline:none" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendGroupMessage(${gidS},'${gnameS}')}">
+      <button onclick="sendGroupMessage(${gidS},'${gnameS}')" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:9px 16px;font-weight:700;cursor:pointer;font-size:13px">Send</button>
     </div>
   </div>`;
   document.body.appendChild(popup);
   const msgs=document.getElementById("gcMessages");
   if(msgs) msgs.scrollTop=msgs.scrollHeight;
+}
+
+async function gcAttachFile(gid, gname){
+  const input=document.getElementById("gcFileInput");
+  if(!input||!input.files.length) return;
+  const file=input.files[0];
+  const isImg=/^image\//.test(file.type);
+  const reader=new FileReader();
+  reader.onload=async function(e){
+    const prefix=isImg?`[img:${file.name}]`:`[file:${file.name}]`;
+    const message=prefix+e.target.result;
+    try{
+      await api("/groups/"+gid+"/messages","POST",{message});
+      await openGroupChat(gid, gname);
+    }catch(err){ showToast("Upload failed: "+err.message,"error"); }
+  };
+  reader.readAsDataURL(file);
+  input.value="";
 }
 
 async function sendGroupMessage(gid, gname){

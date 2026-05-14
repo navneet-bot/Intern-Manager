@@ -226,6 +226,7 @@ class GroupOut(BaseModel):
     members: Optional[str] = ""
     created_by: Optional[str] = ""
     created_at: Optional[datetime] = None
+    message_count: Optional[int] = 0
 
     class Config:
         from_attributes = True
