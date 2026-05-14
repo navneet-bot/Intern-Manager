@@ -420,7 +420,7 @@
     </div>
     <nav class="sidebar-nav" id="sidebarNav"></nav>
     <div class="sidebar-bottom">
-      <button class="nav-item logout" onclick="doLogout()">
+      <button class="nav-item logout" onclick="handleSignOut()">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         Sign Out
       </button>
@@ -663,6 +663,7 @@ async function doLogin(){
     localStorage.setItem("jj_uid", currentUserId);
     localStorage.setItem("jj_email", email);
     localStorage.setItem("jj_login_time", new Date().toISOString());
+    localStorage.removeItem("jj_worklog_done");
     document.getElementById("loginPage").classList.add("hidden");
     document.getElementById("appLayout").classList.remove("hidden");
     await loadAllUsers();
@@ -692,6 +693,12 @@ function goAssignTask(email, name){
   }, 300);
 }
 
+function handleSignOut(){
+  // Admin signs out directly; interns get work log popup (unless already submitted)
+  if(isAdmin()) doLogout();
+  else showWorkLogPopup();
+}
+
 function doLogout(){
   clearTimeout(_inactivityTimer);
   token=""; currentRole=""; currentUser=""; currentUserId=null;
@@ -701,6 +708,7 @@ function doLogout(){
   localStorage.removeItem("jj_uid");
   localStorage.removeItem("jj_email");
   localStorage.removeItem("jj_login_time");
+  localStorage.removeItem("jj_worklog_done");
   localStorage.removeItem("jj_permissions");
   if(ws){try{ws.close();}catch(e){}ws=null;}
   Object.values(chatCharts).forEach(c=>c&&c.destroy&&c.destroy()); chatCharts={};
@@ -712,6 +720,7 @@ function doLogout(){
 }
 
 function showWorkLogPopup(){
+  if(localStorage.getItem("jj_worklog_done")==="1"){ doLogout(); return; }
   const loginTime=localStorage.getItem("jj_login_time");
   const loginStr=loginTime?new Date(loginTime).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"}):"";
   const nowStr=new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"});
@@ -762,6 +771,7 @@ async function submitWorkLogAndLogout(){
     completed_at:  document.getElementById("wl_completed")?.value||""
   };
   try{ await api("/worklog","POST",payload); }catch(e){}
+  localStorage.setItem("jj_worklog_done","1");
   document.getElementById("workLogPopup")?.remove();
   doLogout();
 }
