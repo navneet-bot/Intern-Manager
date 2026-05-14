@@ -526,6 +526,15 @@ def delete_group(gid: int, db: Session = Depends(get_db), user=Depends(require_b
     if not g: raise HTTPException(404, "Not found")
     db.delete(g); db.commit(); return {"msg": "Deleted"}
 
+@app.get("/groups/{gid}/messages", response_model=List[schemas.GroupMessageOut])
+def get_group_messages(gid: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    return db.query(models.GroupMessage).filter(models.GroupMessage.group_id == gid).order_by(models.GroupMessage.sent_at).all()
+
+@app.post("/groups/{gid}/messages", response_model=schemas.GroupMessageOut)
+def send_group_message(gid: int, data: schemas.GroupMessageCreate, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    msg = models.GroupMessage(group_id=gid, sender=user.email, message=data.message)
+    db.add(msg); db.commit(); db.refresh(msg); return msg
+
 # ════════════════════════════════════════════════
 # MEETINGS
 # ════════════════════════════════════════════════

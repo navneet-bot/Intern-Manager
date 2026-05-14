@@ -116,6 +116,15 @@ class Notification(Base):
     created_at   = Column(DateTime(timezone=True), server_default=func.now())
 
 
+class GroupMessage(Base):
+    __tablename__ = "group_messages"
+    id         = Column(Integer, primary_key=True, index=True)
+    group_id   = Column(Integer, index=True)
+    sender     = Column(String)                              # email
+    message    = Column(Text, nullable=False)
+    sent_at    = Column(DateTime(timezone=True), server_default=func.now())
+
+
 class ChatMessage(Base):
     __tablename__ = "chat_messages"
     id          = Column(Integer, primary_key=True, index=True)

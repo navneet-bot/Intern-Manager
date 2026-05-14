@@ -216,6 +216,21 @@ class GroupOut(BaseModel):
         from_attributes = True
 
 
+# ─── GROUP MESSAGE ───────────────────────────────
+class GroupMessageCreate(BaseModel):
+    message: str
+
+class GroupMessageOut(BaseModel):
+    id: int
+    group_id: int
+    sender: str
+    message: str
+    sent_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
 # ─── MEETING ─────────────────────────────────────
 class MeetingCreate(BaseModel):
     title: str
