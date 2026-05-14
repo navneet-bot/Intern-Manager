@@ -500,19 +500,7 @@ function canManage(){
   return isAdmin() || hasPermission("create_task") || hasPermission("manage_projects") || hasPermission("manage_groups") || hasPermission("manage_meetings") || hasPermission("send_notifications") || hasPermission("view_productivity") || hasPermission("view_reports") || hasPermission("manage_attendance");
 }
 function getSuperAdminNav(){
-  // intern pages are always available to super_admin regardless of permissions
-  const internIds=new Set(INTERN_NAV.flatMap(s=>s.items.map(i=>i.id)));
-  return SUPERADMIN_NAV.map(section=>({
-    ...section,
-    items: section.items.filter(item=>{
-      if(item.id===undefined) return false;
-      if(internIds.has(item.id)) return true; // always show all intern pages
-      if(item.id==="candidates") return hasPermission("manage_candidates");
-      if(item.id==="tasks") return hasPermission("create_task") || hasPermission("delete_task") || hasPermission("view_reports");
-      if(item.id==="projects") return hasPermission("manage_projects");
-      return false;
-    })
-  })).filter(section=>section.items.length);
+  return SUPERADMIN_NAV;
 }
 
 // ─── API HELPER ──────────────────────────────
