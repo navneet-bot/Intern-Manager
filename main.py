@@ -476,15 +476,49 @@ def get_attendance(date: Optional[str] = None, db: Session = Depends(get_db), us
 # ════════════════════════════════════════════════
 # WORK LOG
 # ════════════════════════════════════════════════
-def send_to_sheet(payload: dict):
-    webhook = os.getenv("GSHEET_WEBHOOK_URL", "")
-    if not webhook: return
+def _get_sheet(sheet_name: str):
+    """Return a gspread worksheet, or None if not configured."""
+    import json as _json
+    import gspread
+    from google.oauth2.service_account import Credentials
+    sa_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "")
+    sheet_id = os.getenv("GSHEET_ID", "")
+    if not sa_json or not sheet_id:
+        return None
+    creds = Credentials.from_service_account_info(
+        _json.loads(sa_json),
+        scopes=["https://www.googleapis.com/auth/spreadsheets"]
+    )
+    gc = gspread.authorize(creds)
+    ss = gc.open_by_key(sheet_id)
     try:
-        data = json.dumps(payload).encode("utf-8")
-        req  = urllib.request.Request(webhook, data=data, headers={"Content-Type": "application/json"}, method="POST")
-        urllib.request.urlopen(req, timeout=10)
+        return ss.worksheet(sheet_name)
+    except gspread.exceptions.WorksheetNotFound:
+        return ss.add_worksheet(title=sheet_name, rows=1000, cols=20)
+
+def send_to_sheet(payload: dict):
+    try:
+        if payload.get("type") == "worklog":
+            ws = _get_sheet("WorkLogs")
+            if ws is None: return
+            if ws.row_count < 2 or ws.cell(1, 1).value != "Date":
+                ws.insert_row(["Date","Name","Email","Login","Logout","Work Assigned",
+                               "Work Did","Hours","Issues","Resolved","Started At","Completed At"], 1)
+            ws.append_row([payload.get("date",""), payload.get("name",""), payload.get("email",""),
+                           payload.get("login_time",""), payload.get("logout_time",""),
+                           payload.get("work_assigned",""), payload.get("work_did",""),
+                           payload.get("hours_worked",""), payload.get("issues",""),
+                           payload.get("resolved",""), payload.get("started_at",""),
+                           payload.get("completed_at","")])
+        elif payload.get("type") == "new_user":
+            ws = _get_sheet("Users")
+            if ws is None: return
+            if ws.row_count < 2 or ws.cell(1, 1).value != "Name":
+                ws.insert_row(["Name","Email","Role","Registered At"], 1)
+            ws.append_row([payload.get("name",""), payload.get("email",""),
+                           payload.get("role",""), payload.get("registered_at","")])
     except Exception as e:
-        print(f"Sheet webhook failed: {e}")
+        print(f"Google Sheets write failed: {e}")
 
 @app.post("/worklog")
 def submit_worklog(data: schemas.WorkLogCreate, db: Session = Depends(get_db), user=Depends(get_current_user)):
