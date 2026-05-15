@@ -755,22 +755,36 @@ function showWorkLogPopup(){
 }
 
 async function submitWorkLogAndLogout(){
+  const required=[
+    ["wl_assigned","Work Assigned"],["wl_did","Work Did"],
+    ["wl_hours","No. of Hours Worked"],["wl_started","Work Started At"],
+    ["wl_completed","Completed At"],["wl_issues","Issues Faced"],
+    ["wl_resolved","Resolved Issues"]
+  ];
+  for(const [id,label] of required){
+    const el=document.getElementById(id);
+    if(!el||!el.value.trim()){
+      showToast(label+" is required","error");
+      el&&el.focus();
+      return;
+    }
+  }
   const email=localStorage.getItem("jj_email")||"";
   const loginTime=localStorage.getItem("jj_login_time")||"";
   const logoutTime=new Date().toISOString();
   const payload={
     email, name:currentUser,
-    login_time: loginTime,
-    logout_time: logoutTime,
-    work_assigned: document.getElementById("wl_assigned")?.value||"",
-    work_did:      document.getElementById("wl_did")?.value||"",
-    hours_worked:  document.getElementById("wl_hours")?.value||"",
-    issues:        document.getElementById("wl_issues")?.value||"",
-    resolved:      document.getElementById("wl_resolved")?.value||"",
-    started_at:    document.getElementById("wl_started")?.value||"",
-    completed_at:  document.getElementById("wl_completed")?.value||""
+    login_time:loginTime, logout_time:logoutTime,
+    work_assigned:document.getElementById("wl_assigned").value,
+    work_did:document.getElementById("wl_did").value,
+    hours_worked:document.getElementById("wl_hours").value,
+    issues:document.getElementById("wl_issues").value,
+    resolved:document.getElementById("wl_resolved").value,
+    started_at:document.getElementById("wl_started").value,
+    completed_at:document.getElementById("wl_completed").value
   };
   try{ await api("/worklog","POST",payload); }catch(e){}
+  localStorage.setItem("jj_worklog_done","1");
   document.getElementById("workLogPopup")?.remove();
   doLogout();
 }
@@ -1354,7 +1368,7 @@ async function renderCandidates(){
     <div class="table-tools">
       <input class="search-input" placeholder="🔍 Search candidates..." oninput="filterTable('candidateBody',this.value)">
       <select class="filter-select" id="candidateStatusFilter" onchange="filterCandidatesByStatus(this.value)">
-        <option value="">Pending &amp; Rejected</option><option>Pending</option><option>Rejected</option><option>Approved</option>
+        <option value="">All</option><option>Pending</option><option>Rejected</option>
       </select>
     </div>
 
@@ -1389,9 +1403,8 @@ async function renderCandidates(){
     </table>
     </div>
   </div>`;
-  if(isAdmin()) filterCandidatesByStatus("");
-  // Restore saved tab
-  if(candidateTab !== "applicants") setCandidateTab(candidateTab);
+  // Apply tab and correct row visibility (handles both fresh load and tab restoration)
+  setCandidateTab(candidateTab);
 }
 
 function filterCandidatesByStatus(val){
@@ -1719,22 +1732,21 @@ function setCandidateTab(tab){
     btnB.style.background = "transparent";   btnB.style.color = "var(--text-muted)";
     document.getElementById("candidateTabTitle").innerHTML =
       'Applicants <span style="font-size:12px;color:var(--text-muted);font-weight:400">All Applications</span>';
+    // Show pending/rejected only — re-apply current filter (default hides Approved)
+    const filterVal = document.getElementById("candidateStatusFilter")?.value || "";
+    filterCandidatesByStatus(filterVal);
   } else {
     btnB.style.background = "var(--accent)"; btnB.style.color = "#000";
     btnA.style.background = "transparent";   btnA.style.color = "var(--text-muted)";
     document.getElementById("candidateTabTitle").innerHTML =
       'Approved Interns <span style="font-size:12px;color:var(--text-muted);font-weight:400">Elected candidates</span>';
+    // Show only rows whose status cell (col 5) says Approved
+    document.querySelectorAll("#candidateBody tr").forEach(row=>{
+      const cells = row.querySelectorAll("td");
+      if(!cells[5]){ row.style.display = ""; return; }
+      row.style.display = cells[5].textContent.trim() === "Approved" ? "" : "none";
+    });
   }
-
-  // Filter the table rows
-  document.querySelectorAll("#candidateBody tr").forEach(row=>{
-    if(tab === "applicants"){
-      row.style.display = "";
-    } else {
-      // Check entire row text for Approved
-      row.style.display = row.textContent.includes("Approved") ? "" : "none";
-    }
-  });
 }
 
 async function revokeCredentials(id, name){
