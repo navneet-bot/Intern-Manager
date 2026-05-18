@@ -3774,10 +3774,10 @@ async function testEmailJS(){
   await sendEmailJS(adminEmail, "Admin", "Job Jockey — Email Test", "This is a test email. Email is working correctly!");
 }
 
-// ── EmailJS credentials (hardcoded) ──────────
-const EJS_SERVICE  = localStorage.getItem("ejs_service")  || "lbdt qhfe fjjs pfhx";
-const EJS_TEMPLATE = localStorage.getItem("ejs_template") || "template_9fdt08j";
-const EJS_KEY      = localStorage.getItem("ejs_pubkey")   || "hGVTdWAxjoz4EdTlk";
+// ── EmailJS credentials (from admin settings only) ──────────
+const EJS_SERVICE  = localStorage.getItem("ejs_service")  || "";
+const EJS_TEMPLATE = localStorage.getItem("ejs_template") || "";
+const EJS_KEY      = localStorage.getItem("ejs_pubkey")   || "";
 
 async function sendEmailJS(toEmail, toName, subject, message){
   const svc = localStorage.getItem("ejs_service")  || "lbdt qhfe fjjs pfhx";
