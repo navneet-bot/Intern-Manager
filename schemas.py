@@ -116,6 +116,8 @@ class CandidateCreate(BaseModel):
     duration: Optional[str] = ""
 
 class CandidateUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
     status: Optional[str] = None
     phone: Optional[str] = None
     skill: Optional[str] = None

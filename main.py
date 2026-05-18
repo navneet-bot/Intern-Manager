@@ -12,6 +12,7 @@ from jose import jwt, JWTError
 from typing import Optional, List, Dict, Any
 from pathlib import Path
 import csv, json, re, os, smtplib, urllib.parse, urllib.request
+import bcrypt as _bcrypt
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from fastapi.staticfiles import StaticFiles
@@ -21,29 +22,50 @@ from permissions import has_permission
 
 models.Base.metadata.create_all(bind=engine)
 
-# Auto-seed admin on first run
+# ── Password helpers (bcrypt direct — avoids passlib/bcrypt 4.x compat issues) ─
+def hash_password(plain: str) -> str:
+    pw = (plain or "").encode("utf-8")[:72]   # bcrypt hard limit is 72 bytes
+    return _bcrypt.hashpw(pw, _bcrypt.gensalt()).decode("utf-8")
+
+def check_password(plain: str, stored: str) -> bool:
+    if (stored or "").startswith("$2b$") or (stored or "").startswith("$2a$"):
+        try:
+            pw = (plain or "").encode("utf-8")[:72]
+            return _bcrypt.checkpw(pw, stored.encode("utf-8"))
+        except Exception:
+            return False
+    return plain == stored  # legacy plain-text accounts
+
+# Ensure admin always exists with correct email; password stays as-is if already set
 def seed_admin():
     db = SessionLocal()
     try:
-        if not db.query(models.User).filter(models.User.role == "admin").first():
-            db.add(models.User(name="Navneet", email="navneet@jobjockey.in", password="123", role="admin", permissions="all"))
-            db.commit()
+        admin = db.query(models.User).filter(models.User.role == "admin").first()
+        if admin:
+            # Always keep the canonical email and name; never touch the password
+            admin.email = "navneet@jobjockey.in"
+            admin.name  = "Navneet"
+        else:
+            db.add(models.User(name="Navneet", email="navneet@jobjockey.in", password=hash_password("123"), role="admin", permissions="all"))
+        db.commit()
     finally:
         db.close()
 
 seed_admin()
 
 app = FastAPI(title="Job Jockey API", version="3.1.0")
+_cors_env = os.getenv("ALLOWED_ORIGINS", "")
+_cors_origins = [o.strip() for o in _cors_env.split(",") if o.strip()] if _cors_env else ["*"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 app.mount("/static", StaticFiles(directory="."), name="static")
 
-SECRET_KEY    = "JOBJOCKEY_SECRET_2025"
+SECRET_KEY    = os.getenv("JWT_SECRET_KEY", "JOBJOCKEY_SECRET_2025")
 ALGORITHM     = "HS256"
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login", auto_error=False)
 
@@ -100,16 +122,20 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 # ── Email helper ─────────────────────────────────
-def send_welcome_email(to_email: str, name: str, jj_email: str, password: str):
-    SENDER_EMAIL    = os.getenv("JJ_EMAIL", "")
-    SENDER_PASSWORD = os.getenv("JJ_EMAIL_PASS", "")
+def send_welcome_email(to_email: str, name: str, jj_email: str, password: str, db=None):
+    # Try DB config first, fall back to env vars
+    if db:
+        def _val(k):
+            r = db.query(models.Config).filter(models.Config.key == k).first()
+            return r.value if r and r.value else ""
+        SENDER_EMAIL    = _val("smtp_email") or os.getenv("JJ_EMAIL", "")
+        SENDER_PASSWORD = _val("smtp_pass")  or os.getenv("JJ_EMAIL_PASS", "")
+    else:
+        SENDER_EMAIL    = os.getenv("JJ_EMAIL", "")
+        SENDER_PASSWORD = os.getenv("JJ_EMAIL_PASS", "")
     if not SENDER_EMAIL or not SENDER_PASSWORD:
         print(f"⚠️  Email not configured. Credentials for {name}: {jj_email} / {password}")
         return
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = "🎉 Welcome to Job Jockey — Your Login Credentials"
-    msg["From"]    = SENDER_EMAIL
-    msg["To"]      = to_email
     html = f"""
     <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;background:#0f172a;color:#e2e8f0;border-radius:12px;overflow:hidden">
       <div style="background:#f59e0b;padding:24px;text-align:center">
@@ -133,12 +159,10 @@ def send_welcome_email(to_email: str, name: str, jj_email: str, password: str):
         <p style="color:#64748b;font-size:12px;margin-top:24px">— Job Jockey Team</p>
       </div>
     </div>"""
-    msg.attach(MIMEText(html, "html"))
     try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(SENDER_EMAIL, SENDER_PASSWORD)
-            server.sendmail(SENDER_EMAIL, to_email, msg.as_string())
-            print(f"✅ Welcome email sent to {to_email}")
+        _send_smtp(SENDER_EMAIL, SENDER_PASSWORD, to_email,
+                   "🎉 Welcome to Job Jockey — Your Login Credentials", html)
+        print(f"✅ Welcome email sent to {to_email}")
     except Exception as e:
         print(f"❌ Email failed: {e}")
 
@@ -174,14 +198,14 @@ def root():
 def register_admin(data: schemas.RegisterUser, db: Session = Depends(get_db)):
     if db.query(models.User).filter(models.User.role == "admin").first(): raise HTTPException(400, "Admin already exists")
     if db.query(models.User).filter(models.User.email == data.email).first(): raise HTTPException(400, "Email already registered")
-    user = models.User(name=data.name or data.email.split("@")[0], email=data.email, password=data.password, role="admin", permissions="all")
+    user = models.User(name=data.name or data.email.split("@")[0], email=data.email, password=hash_password(data.password), role="admin", permissions="all")
     db.add(user); db.commit(); db.refresh(user)
     return {"msg": "Admin created", "id": user.id}
 
 @app.post("/register-intern")
 def register_intern(data: schemas.RegisterUser, db: Session = Depends(get_db)):
     if db.query(models.User).filter(models.User.email == data.email).first(): raise HTTPException(400, "Email already registered")
-    user = models.User(name=data.name or data.email.split("@")[0], email=data.email, password=data.password, role="intern", permissions="")
+    user = models.User(name=data.name or data.email.split("@")[0], email=data.email, password=hash_password(data.password), role="intern", permissions="")
     db.add(user); db.commit(); db.refresh(user)
     from datetime import date as _date
     send_to_sheet({"type":"new_user","date":str(_date.today()),"name":user.name,"email":user.email,"role":user.role})
@@ -190,7 +214,7 @@ def register_intern(data: schemas.RegisterUser, db: Session = Depends(get_db)):
 @app.post("/login", response_model=schemas.LoginOut)
 def login(data: schemas.LoginIn, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == data.email).first()
-    if not user or user.password != data.password: raise HTTPException(400, "Invalid email or password")
+    if not user or not check_password(data.password, user.password): raise HTTPException(400, "Invalid email or password")
     return schemas.LoginOut(
         access_token=create_token(user.id, user.email, user.role),
         user_id=user.id, role=user.role, name=user.name,
@@ -379,6 +403,28 @@ def import_google_form_candidates(data: schemas.GoogleFormImportRequest, db: Ses
 
     return {"created": created, "skipped": skipped, "total_rows": len(rows)}
 
+@app.get("/candidates/me")
+def get_my_candidate(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    c = db.query(models.Candidate).filter(
+        models.Candidate.resume.like(f"LOGIN:{user.email}|PASS:%")
+    ).first()
+    if not c: raise HTTPException(404, "No candidate record found")
+    return {"phone": c.phone or "", "skill": c.skill or "", "state": c.state or "",
+            "college": c.college or "", "edu_domain": c.edu_domain or "",
+            "name": c.name, "email": c.email, "duration": c.duration or ""}
+
+@app.patch("/candidates/me")
+def update_my_candidate(data: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    c = db.query(models.Candidate).filter(
+        models.Candidate.resume.like(f"LOGIN:{user.email}|PASS:%")
+    ).first()
+    if not c: raise HTTPException(404, "No candidate record found")
+    for k in ("phone", "skill", "state", "college", "edu_domain"):
+        if k in data and data[k] is not None:
+            setattr(c, k, data[k])
+    db.commit()
+    return {"msg": "Info updated"}
+
 @app.patch("/candidates/{cid}", response_model=schemas.CandidateOut)
 def update_candidate(cid: int, data: schemas.CandidateUpdate, db: Session = Depends(get_db), user=Depends(require_permission("manage_candidates"))):
     c = db.query(models.Candidate).filter(models.Candidate.id == cid).first()
@@ -386,35 +432,38 @@ def update_candidate(cid: int, data: schemas.CandidateUpdate, db: Session = Depe
     for k, v in data.dict(exclude_none=True).items(): setattr(c, k, v)
     db.commit(); db.refresh(c)
 
-    if data.status == "Approved":
-        # Auto-generate jobjockey.in email from name
-        # "Rahul Sharma" -> "rahul.sharma@jobjockey.in"
-        clean = re.sub(r"[^a-zA-Z\s]", "", c.name).strip().lower()
-        parts = clean.split()
-        base_email = f"{parts[0]}.{parts[-1]}@jobjockey.in" if len(parts) >= 2 else f"{parts[0]}@jobjockey.in" if parts else f"intern@jobjockey.in"
-        base = base_email.replace("@jobjockey.in", "")
-        jj_email = base_email
-        suffix = 1
-        while db.query(models.User).filter(models.User.email == jj_email).first():
-            jj_email = f"{base}{suffix}@jobjockey.in"
-            suffix += 1
-
-        password = "123"
-
-        # Create intern user account
-        if not db.query(models.User).filter(models.User.email == jj_email).first():
-            db.add(models.User(name=c.name, email=jj_email, password=password, role="intern", permissions=""))
-            db.commit()
-
-        # Store credentials in resume field so frontend can display them
-        c.resume = f"LOGIN:{jj_email}|PASS:{password}"
-        db.commit(); db.refresh(c)
-
-        # Send welcome email to personal email (non-blocking)
+    # Only generate credentials on first approval — skip if already approved (resume has LOGIN:)
+    if data.status == "Approved" and not (c.resume or "").startswith("LOGIN:"):
         try:
-            send_welcome_email(to_email=c.email, name=c.name, jj_email=jj_email, password=password)
-        except Exception as e:
-            print(f"Email error: {e}")
+            clean = re.sub(r"[^a-zA-Z\s]", "", c.name or "").strip().lower()
+            parts = clean.split()
+            base_email = f"{parts[0]}.{parts[-1]}@jobjockey.in" if len(parts) >= 2 else f"{parts[0]}@jobjockey.in" if parts else f"intern@jobjockey.in"
+            base = base_email.replace("@jobjockey.in", "")
+            jj_email = base_email
+            suffix = 1
+            while db.query(models.User).filter(models.User.email == jj_email).first():
+                jj_email = f"{base}{suffix}@jobjockey.in"
+                suffix += 1
+
+            password = "123"
+
+            if not db.query(models.User).filter(models.User.email == jj_email).first():
+                db.add(models.User(name=c.name or jj_email.split("@")[0], email=jj_email, password=hash_password(password), role="intern", permissions=""))
+                db.commit()
+
+            c.resume = f"LOGIN:{jj_email}|PASS:{password}"
+            db.commit(); db.refresh(c)
+
+            try:
+                send_welcome_email(to_email=c.email or "", name=c.name or "", jj_email=jj_email, password=password, db=db)
+            except Exception as e:
+                print(f"Email error: {e}")
+
+        except Exception as exc:
+            import traceback
+            print(f"❌ Approval error for candidate {cid}: {traceback.format_exc()}")
+            db.rollback()
+            raise HTTPException(500, f"Approval failed: {exc}")
 
     return c
 
@@ -596,9 +645,21 @@ def get_groups(db: Session = Depends(get_db), user=Depends(get_current_user)):
 def update_group_members(gid: int, data: dict, db: Session = Depends(get_db), user=Depends(require_permission("manage_groups"))):
     g = db.query(models.Group).filter(models.Group.id == gid).first()
     if not g: raise HTTPException(404, "Not found")
-    g.members = json.dumps(data.get("members", []))
+    try: old_members = json.loads(g.members or "[]")
+    except: old_members = []
+    new_members = data.get("members", [])
+    g.members = json.dumps(new_members)
     db.commit(); db.refresh(g)
-    return {"msg": "Members updated", "members": data.get("members", [])}
+    # Notify members who were just added
+    for email in new_members:
+        if email not in old_members:
+            db.add(models.Notification(
+                title=f"👥 Added to {g.name}",
+                body=f"You have been added to the group \"{g.name}\"",
+                icon="👥", target_email=email
+            ))
+    db.commit()
+    return {"msg": "Members updated", "members": new_members}
 
 @app.delete("/groups/{gid}")
 def delete_group(gid: int, db: Session = Depends(get_db), user=Depends(require_boss)):
@@ -613,7 +674,40 @@ def get_group_messages(gid: int, db: Session = Depends(get_db), user=Depends(get
 @app.post("/groups/{gid}/messages", response_model=schemas.GroupMessageOut)
 def send_group_message(gid: int, data: schemas.GroupMessageCreate, db: Session = Depends(get_db), user=Depends(get_current_user)):
     msg = models.GroupMessage(group_id=gid, sender=user.email, message=data.message)
-    db.add(msg); db.commit(); db.refresh(msg); return msg
+    db.add(msg); db.commit(); db.refresh(msg)
+    # Notify all group members except sender
+    g = db.query(models.Group).filter(models.Group.id == gid).first()
+    if g:
+        try: members = json.loads(g.members or "[]")
+        except: members = []
+        if data.message.startswith("[img:"):
+            fname = data.message[5:data.message.index("]")] if "]" in data.message else "image"
+            preview = f"🖼️ Sent an image: {fname}"
+        elif data.message.startswith("[file:"):
+            fname = data.message[6:data.message.index("]")] if "]" in data.message else "file"
+            preview = f"📎 Sent a file: {fname}"
+        else:
+            preview = data.message[:80] + "..." if len(data.message) > 80 else data.message
+        for email in members:
+            if email != user.email:
+                db.add(models.Notification(
+                    title=f"💬 {user.name} in {g.name}",
+                    body=preview, icon="💬", target_email=email
+                ))
+        if members: db.commit()
+    return msg
+
+@app.delete("/groups/{gid}/messages/{mid}")
+def delete_group_message(gid: int, mid: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    msg = db.query(models.GroupMessage).filter(
+        models.GroupMessage.id == mid,
+        models.GroupMessage.group_id == gid
+    ).first()
+    if not msg: raise HTTPException(404, "Message not found")
+    if msg.sender != user.email and user.role != "admin":
+        raise HTTPException(403, "You can only delete your own messages")
+    db.delete(msg); db.commit()
+    return {"msg": "Deleted"}
 
 # ════════════════════════════════════════════════
 # MEETINGS
@@ -755,7 +849,14 @@ async def send_message(data: schemas.MessageCreate, db: Session = Depends(get_db
         await manager.send_to(data.receiver_id, out)
         receiver = db.query(models.User).filter(models.User.id == data.receiver_id).first()
         if receiver:
-            preview = data.message[:80] + "..." if len(data.message) > 80 else data.message
+            if data.message.startswith("[img:"):
+                fname = data.message[5:data.message.index("]")] if "]" in data.message else "image"
+                preview = f"🖼️ Sent an image: {fname}"
+            elif data.message.startswith("[file:"):
+                fname = data.message[6:data.message.index("]")] if "]" in data.message else "file"
+                preview = f"📎 Sent a file: {fname}"
+            else:
+                preview = data.message[:80] + "..." if len(data.message) > 80 else data.message
             db.add(models.Notification(
                 title=f"💬 {user.name}",
                 body=preview,
@@ -811,13 +912,104 @@ def change_password(data: dict, db: Session = Depends(get_db), user=Depends(get_
     new_pass = data.get("new_password","")
     if not current or not new_pass:
         raise HTTPException(400, "Both current and new password required")
-    if user.password != current:
+    if not check_password(current, user.password):
         raise HTTPException(400, "Current password is incorrect")
     if len(new_pass) < 4:
         raise HTTPException(400, "New password must be at least 4 characters")
-    user.password = new_pass
+    user.password = hash_password(new_pass)
     db.commit()
     return {"msg": "Password changed successfully"}
+
+# EMAIL CONFIG & SEND
+# ════════════════════════════════════════════════
+def _get_smtp_config(db):
+    """Return (smtp_email, smtp_pass) from DB config, falling back to env vars."""
+    def _val(key):
+        row = db.query(models.Config).filter(models.Config.key == key).first()
+        return row.value if row and row.value else ""
+    email = _val("smtp_email") or os.getenv("JJ_EMAIL", "")
+    pwd   = _val("smtp_pass")  or os.getenv("JJ_EMAIL_PASS", "")
+    return email, pwd
+
+def _send_smtp(smtp_email: str, smtp_pass: str, to_email: str, subject: str, html_body: str):
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"]    = f"Job Jockey <{smtp_email}>"
+    msg["To"]      = to_email
+    msg.attach(MIMEText(html_body, "html"))
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=15) as s:
+        s.login(smtp_email, smtp_pass)
+        s.sendmail(smtp_email, to_email, msg.as_string())
+
+@app.get("/config/email")
+def get_email_config(db: Session = Depends(get_db), user=Depends(require_boss)):
+    smtp_email, smtp_pass = _get_smtp_config(db)
+    return {
+        "smtp_email":     smtp_email,
+        "smtp_configured": bool(smtp_email and smtp_pass),
+        "smtp_pass_set":  bool(smtp_pass)
+    }
+
+@app.post("/config/email")
+def save_email_config(data: dict, db: Session = Depends(get_db), user=Depends(require_boss)):
+    for key in ("smtp_email", "smtp_pass"):
+        val = data.get(key, "")
+        if key == "smtp_pass" and val == "********":
+            continue          # placeholder — don't overwrite stored password
+        row = db.query(models.Config).filter(models.Config.key == key).first()
+        if row:
+            row.value = val
+        else:
+            db.add(models.Config(key=key, value=val))
+    db.commit()
+    return {"msg": "Email config saved"}
+
+@app.post("/email/send")
+def send_email_api(data: dict, db: Session = Depends(get_db), user=Depends(require_boss)):
+    to_email = (data.get("to_email") or "").strip()
+    subject  = (data.get("subject")  or "").strip()
+    message  = (data.get("message")  or "").strip()
+    to_name  = (data.get("to_name")  or to_email.split("@")[0]).strip()
+    if not to_email or "@" not in to_email:
+        raise HTTPException(400, "Invalid recipient email")
+    if not subject:
+        raise HTTPException(400, "Subject is required")
+    smtp_email, smtp_pass = _get_smtp_config(db)
+    if not smtp_email or not smtp_pass:
+        raise HTTPException(400, "Email not configured. Go to Settings → Email to set Gmail + App Password.")
+    html_body = f"""
+    <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#0f172a;color:#e2e8f0;border-radius:12px;overflow:hidden">
+      <div style="background:#f59e0b;padding:20px 24px;text-align:center">
+        <h1 style="margin:0;color:#000;font-size:22px">Job Jockey</h1>
+        <p style="margin:4px 0 0;color:#1e293b;font-size:12px">Intern Management Platform</p>
+      </div>
+      <div style="padding:28px 32px">
+        <p style="margin:0 0 8px;color:#94a3b8;font-size:13px">Hi <strong style="color:#f59e0b">{to_name}</strong>,</p>
+        <div style="font-size:14px;line-height:1.7;white-space:pre-wrap;color:#e2e8f0">{message}</div>
+        <p style="margin:24px 0 0;color:#64748b;font-size:12px">— Job Jockey Team</p>
+      </div>
+    </div>"""
+    try:
+        _send_smtp(smtp_email, smtp_pass, to_email, subject, html_body)
+        return {"msg": f"Email sent to {to_email}"}
+    except Exception as e:
+        raise HTTPException(500, f"Failed to send email: {e}")
+
+@app.post("/email/test")
+def test_email(db: Session = Depends(get_db), user=Depends(require_boss)):
+    smtp_email, smtp_pass = _get_smtp_config(db)
+    if not smtp_email or not smtp_pass:
+        raise HTTPException(400, "Email not configured")
+    html_body = f"""
+    <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;background:#0f172a;color:#e2e8f0;border-radius:12px;padding:28px">
+      <h2 style="color:#f59e0b;margin-top:0">✅ Test Email Successful</h2>
+      <p style="color:#94a3b8">Your Job Jockey email is configured correctly.<br>SMTP: <strong style="color:#f59e0b">{smtp_email}</strong></p>
+    </div>"""
+    try:
+        _send_smtp(smtp_email, smtp_pass, smtp_email, "✅ Job Jockey — Email Test", html_body)
+        return {"msg": f"Test email sent to {smtp_email}"}
+    except Exception as e:
+        raise HTTPException(500, f"Test failed: {e}")
 
 # PRODUCTIVITY
 # ════════════════════════════════════════════════

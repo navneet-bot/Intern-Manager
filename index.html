@@ -1391,11 +1391,12 @@ async function renderCandidates(){
         <td>${c.resume&&!c.resume.startsWith("LOGIN:")?`<a href="${c.resume}" target="_blank" style="color:var(--accent);font-size:12px">View</a>`:"—"}</td>
         <td style="display:flex;gap:4px;flex-wrap:wrap">
           ${c.status==="Pending"?`<button class="action-btn action-approve" onclick="updateCandidate(${c.id},'Approved')" title="Approve">✓</button><button class="action-btn action-reject" onclick="updateCandidate(${c.id},'Rejected')" title="Reject">✗</button>`:""}
-          ${c.status==="Approved"?'<button class="action-btn action-edit" onclick="goAssignTask(\''+c.email+'\',\''+c.name+'\')" title="Assign Task">📋</button>':""}
+          ${c.status==="Approved"?`<button class="action-btn action-edit" onclick="goAssignTask(${JSON.stringify(c.email).replace(/"/g,'&quot;')},${JSON.stringify(c.name).replace(/"/g,'&quot;')})" title="Assign Task">📋</button>`:""}
           ${isAdmin()?(
-            '<button class="action-btn action-edit" onclick="openSendEmailModal(\''+c.email+'\',\''+c.name+'\')" title="Send Email">📧</button>'+
-            (c.status==="Approved"&&c.resume&&c.resume.startsWith("LOGIN:")?'<button class="action-btn action-reject" onclick="revokeCredentials('+c.id+',\''+c.name+'\')" style="background:rgba(139,92,246,0.15);color:var(--purple)">🔒 Revoke</button>':'')+
-            '<button class="action-btn action-reject" onclick="deleteCandidate('+c.id+',\''+c.name+'\')" title="Delete">🗑</button>'
+            `<button class="action-btn action-edit" onclick="openEditCandidateModal(${c.id},${JSON.stringify(c.name).replace(/"/g,'&quot;')},${JSON.stringify(c.email).replace(/"/g,'&quot;')},${JSON.stringify(c.phone||'').replace(/"/g,'&quot;')},${JSON.stringify(c.skill||'').replace(/"/g,'&quot;')},${JSON.stringify(c.state||'').replace(/"/g,'&quot;')},${JSON.stringify(c.college||'').replace(/"/g,'&quot;')},${JSON.stringify(c.edu_domain||'').replace(/"/g,'&quot;')},${JSON.stringify(c.duration||'').replace(/"/g,'&quot;')},${JSON.stringify(c.status).replace(/"/g,'&quot;')})" title="Edit Info">✏️</button>`+
+            `<button class="action-btn action-edit" onclick="openSendEmailModal(${JSON.stringify(c.email).replace(/"/g,'&quot;')},${JSON.stringify(c.name).replace(/"/g,'&quot;')})" title="Send Email">📧</button>`+
+            (c.status==="Approved"&&c.resume&&c.resume.startsWith("LOGIN:")?`<button class="action-btn action-reject" onclick="revokeCredentials(${c.id},${JSON.stringify(c.name).replace(/"/g,'&quot;')})" style="background:rgba(139,92,246,0.15);color:var(--purple)">🔒 Revoke</button>`:'')+
+            `<button class="action-btn action-reject" onclick="deleteCandidate(${c.id},${JSON.stringify(c.name).replace(/"/g,'&quot;')})" title="Delete">🗑</button>`
           ):""}
         </td>
       </tr>`).join("")||`<tr><td colspan="12" style="text-align:center;padding:24px;color:var(--text-muted)">No candidates yet — use Google Form Sync or Upload CSV above!</td></tr>`}
@@ -1687,7 +1688,7 @@ async function updateCandidate(id,status){
         "Best regards,\n"+
         "Job Jockey Team";
 
-      const emailSent=await sendEmailJS(
+      const emailSent=await sendEmail(
         c.email, c.name,
         "Congratulations! You are selected as Intern for Job Jockey",
         emailBody
@@ -1713,6 +1714,8 @@ async function updateCandidate(id,status){
     } else {
       showToast("Candidate "+status.toLowerCase(),"info");
     }
+    // After approval, switch to Approved tab so new intern appears there
+    if(status==="Approved") candidateTab="applications";
     renderCandidates();
   }
   catch(e){showToast("Failed: "+e.message,"error");}
@@ -1765,6 +1768,79 @@ async function deleteCandidate(id,name){
   try{await api("/candidates/"+id,"DELETE");showToast("Deleted","error");renderCandidates();}
   catch(e){showToast("Failed: "+e.message,"error");}
 }
+
+function openEditCandidateModal(id,name,email,phone,skill,state,college,edu_domain,duration,status){
+  const ex=document.getElementById("editCandModal");if(ex)ex.remove();
+  const modal=document.createElement("div");
+  modal.id="editCandModal";
+  modal.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:1000;padding:16px";
+  const inp=(id,val,ph)=>`<input id="${id}" value="${(val||"").replace(/"/g,"&quot;")}" placeholder="${ph||""}" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;box-sizing:border-box">`;
+  modal.innerHTML=`
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:520px;box-shadow:0 24px 64px rgba(0,0,0,0.5);max-height:92vh;overflow-y:auto">
+    <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <h3 style="margin:0;font-size:15px;font-weight:700">✏️ Edit Candidate</h3>
+      <button onclick="document.getElementById('editCandModal').remove()" style="background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div style="padding:20px 22px;display:flex;flex-direction:column;gap:13px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field" style="margin:0"><label>Full Name</label>${inp("ec_name",name,"e.g. Rahul Sharma")}</div>
+        <div class="field" style="margin:0"><label>Personal Email</label>${inp("ec_email",email,"rahul@gmail.com")}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field" style="margin:0"><label>Phone</label>${inp("ec_phone",phone,"9876543210")}</div>
+        <div class="field" style="margin:0"><label>Skills</label>${inp("ec_skill",skill,"React JS, Python")}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field" style="margin:0"><label>State</label>${inp("ec_state",state,"Maharashtra")}</div>
+        <div class="field" style="margin:0"><label>College</label>${inp("ec_college",college,"MIT Pune")}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field" style="margin:0"><label>Education Domain</label>${inp("ec_edu",edu_domain,"Computer Science")}</div>
+        <div class="field" style="margin:0"><label>Duration</label>
+          <select id="ec_duration" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px">
+            <option value="">-- Select --</option>
+            ${["1 Month","2 Months","3 Months","4 Months","6 Months","1 Year"].map(d=>`<option ${duration===d?"selected":""}>${d}</option>`).join("")}
+          </select>
+        </div>
+      </div>
+      <div class="field" style="margin:0"><label>Status</label>
+        <select id="ec_status" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px">
+          ${["Pending","Approved","Rejected"].map(s=>`<option ${status===s?"selected":""}>${s}</option>`).join("")}
+        </select>
+      </div>
+      <div id="ecStatus" style="font-size:13px"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn-sm btn-outline" onclick="document.getElementById('editCandModal').remove()">Cancel</button>
+        <button class="btn-sm btn-accent" onclick="saveEditCandidate(${id})">💾 Save Changes</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+}
+
+async function saveEditCandidate(id){
+  const statusEl=document.getElementById("ecStatus");
+  statusEl.innerHTML=`<span style="color:var(--accent)">⏳ Saving...</span>`;
+  try{
+    await api("/candidates/"+id,"PATCH",{
+      name:      document.getElementById("ec_name")?.value.trim()||undefined,
+      email:     document.getElementById("ec_email")?.value.trim()||undefined,
+      phone:     document.getElementById("ec_phone")?.value.trim()||"",
+      skill:     document.getElementById("ec_skill")?.value.trim()||"",
+      state:     document.getElementById("ec_state")?.value.trim()||"",
+      college:   document.getElementById("ec_college")?.value.trim()||"",
+      edu_domain:document.getElementById("ec_edu")?.value.trim()||"",
+      duration:  document.getElementById("ec_duration")?.value||"",
+      status:    document.getElementById("ec_status")?.value||""
+    });
+    showToast("Candidate updated!","success");
+    document.getElementById("editCandModal").remove();
+    renderCandidates();
+  }catch(e){
+    statusEl.innerHTML=`<span style="color:var(--red)">❌ ${e.message}</span>`;
+  }
+}
+
 function toggleSelectAll(checked){
   document.querySelectorAll(".candCheck").forEach(cb=>cb.checked=checked);
   updateBulkCount();
@@ -2559,7 +2635,11 @@ function renderChat(){
       </div>
       <div class="chat-messages" id="chatMsgs" style="display:none"></div>
       <div class="chat-input-area">
-        <input class="chat-input" id="chatInput" placeholder="Type a message and press Enter…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}" disabled>
+        <label title="Attach file" style="cursor:pointer;color:var(--text-muted);display:flex;align-items:center;padding:7px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);flex-shrink:0">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+          <input type="file" id="chatFileInput" accept="image/*,.pdf" style="display:none" onchange="chatAttachFile()">
+        </label>
+        <input class="chat-input" id="chatInput" placeholder="Type a message or paste a link…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}" disabled>
         <button class="send-btn" onclick="sendMessage()" id="sendBtn" disabled style="opacity:.4">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
@@ -2624,7 +2704,7 @@ async function fetchMessages(uid){
       return `<div class="msg ${isMe?"me":""}" id="msg_${m.id}" style="position:relative" onmouseenter="this.querySelector('.del-btn')&&(this.querySelector('.del-btn').style.opacity='1')" onmouseleave="this.querySelector('.del-btn')&&(this.querySelector('.del-btn').style.opacity='0')">
         <div>
           <div class="msg-bubble" style="position:relative">
-            ${m.message}
+            ${_gcRenderMsg(m.message)}
             ${isMe||isAdmin()?`<button class="del-btn" onclick="deleteMessage(${m.id})" title="Delete message"
               style="position:absolute;top:-8px;${isMe?"left":"right"}:-8px;background:var(--red);border:none;border-radius:50%;width:18px;height:18px;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;padding:0;line-height:1">✕</button>`:""}
           </div>
@@ -2651,6 +2731,28 @@ async function sendMessage(){
   if(!selectedReceiverId){showToast("Select a contact first","error");return;}
   try{await api("/send","POST",{receiver_id:selectedReceiverId,message});inp.value="";await fetchMessages(selectedReceiverId);}
   catch(e){showToast("Failed to send","error");}
+}
+async function chatAttachFile(){
+  const input=document.getElementById("chatFileInput");
+  if(!input||!input.files.length) return;
+  if(!selectedReceiverId){showToast("Select a contact first","error");return;}
+  const file=input.files[0];
+  const isImg=/^image\//.test(file.type);
+  const isPdf=file.type==="application/pdf"||file.name.toLowerCase().endsWith(".pdf");
+  if(!isImg&&!isPdf){showToast("Only images and PDFs are supported","error");input.value="";return;}
+  if(file.size>8*1024*1024){showToast("File too large — max 8 MB","error");input.value="";return;}
+  const reader=new FileReader();
+  reader.onload=async function(e){
+    const prefix=isImg?`[img:${file.name}]`:`[file:${file.name}]`;
+    const message=prefix+e.target.result;
+    try{
+      await api("/send","POST",{receiver_id:selectedReceiverId,message});
+      await fetchMessages(selectedReceiverId);
+      showToast("File sent!","success");
+    }catch(err){showToast("Failed to send file","error");}
+  };
+  reader.readAsDataURL(file);
+  input.value="";
 }
 function filterChats(q){document.querySelectorAll(".chat-contact").forEach(el=>el.style.display=el.textContent.toLowerCase().includes(q.toLowerCase())?"":"none");}
 function connectWS(uid){
@@ -2710,7 +2812,8 @@ async function pollNotifications(){
       playNotifSound();
       const newest=data.find(n=>!n.read);
       if(newest){
-        showToast(`🔔 ${newest.title}`,"info");
+        const preview=newest.body?`${newest.icon||"🔔"} ${newest.title}: ${newest.body.slice(0,60)}`:`${newest.icon||"🔔"} ${newest.title}`;
+        showToast(preview,"info");
       }
     }
     _lastNotifCount=unread;
@@ -2722,16 +2825,28 @@ async function pollNotifications(){
 function buildNotifPopupList(data){
   const list=document.getElementById("notifPopupList");
   if(!list) return;
-  const recent=data.slice(0,8);
+  const recent=data.slice(0,10);
   if(!recent.length){
     list.innerHTML=`<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">No notifications yet</div>`;
     return;
   }
-  list.innerHTML=recent.map(n=>`
-    <div class="notif-popup-item ${n.read?"":"unread"}" onclick="markNotifRead(${n.id})">
+  list.innerHTML=recent.map(n=>{
+    // Decide where tapping the notification should navigate
+    let nav="";
+    if(n.title.includes(" in ") && n.icon==="💬") nav="groups";
+    else if(n.icon==="💬") nav="chat";
+    else if(n.icon==="👥") nav="groups";
+    else if(n.icon==="📋") nav=isIntern()?"mytasks":"tasks";
+    else if(n.icon==="📅") nav="meetings";
+    else if(n.icon==="📄") nav="reports";
+    const onclick=nav
+      ? `markNotifRead(${n.id});closeNotifPopup();navTo('${nav}')`
+      : `markNotifRead(${n.id})`;
+    return `<div class="notif-popup-item ${n.read?"":"unread"}" onclick="${onclick}" style="cursor:pointer">
       <div class="notif-popup-title">${n.icon||"🔔"} ${n.title}</div>
       <div class="notif-popup-body">${n.body||""}</div>
-    </div>`).join("");
+    </div>`;
+  }).join("");
 }
 
 async function markNotifRead(id){
@@ -2764,7 +2879,9 @@ document.addEventListener("click",function(e){
   }
 });
 
-setInterval(pollNotifications, 8000);
+setInterval(pollNotifications, 5000);
+// Auto-refresh groups grid (so interns see new memberships without navigating away)
+setInterval(()=>{ if(token && currentSection==="groups" && document.getElementById("groupsGrid")) loadGroups(); }, 8000);
 
 // ════════════════════════════════════════════
 // GROUPS
@@ -2949,58 +3066,105 @@ function _gcLinkify(text){
   const esc=text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
   return esc.replace(/(https?:\/\/[^\s<>"&]+)/g,'<a href="$1" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;word-break:break-all">$1</a>');
 }
+function openImgLightbox(src){
+  const m=document.createElement("div");
+  m.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;z-index:9999;cursor:zoom-out";
+  m.onclick=()=>m.remove();
+  document.addEventListener("keydown",function esc(e){if(e.key==="Escape"){m.remove();document.removeEventListener("keydown",esc);}});
+  const img=document.createElement("img");
+  img.src=src;
+  img.style.cssText="max-width:90vw;max-height:90vh;border-radius:10px;object-fit:contain;box-shadow:0 8px 48px rgba(0,0,0,0.8)";
+  m.appendChild(img);
+  document.body.appendChild(m);
+}
 function _gcRenderMsg(msg){
   if(msg.startsWith("[img:")){
     const name=msg.slice(5,msg.indexOf("]"));
     const data=msg.slice(msg.indexOf("]")+1);
-    return `<img src="${data}" alt="${name}" style="max-width:220px;max-height:160px;border-radius:8px;cursor:pointer;display:block" onclick="window.open('${data}','_blank')"><span style="font-size:11px;color:var(--text-muted)">${name}</span>`;
+    return `<img src="${data}" alt="${name}" style="max-width:220px;max-height:160px;border-radius:8px;cursor:pointer;display:block" onclick="openImgLightbox(this.src)"><span style="font-size:11px;color:var(--text-muted)">${name}</span>`;
   }
   if(msg.startsWith("[file:")){
     const name=msg.slice(6,msg.indexOf("]"));
     const data=msg.slice(msg.indexOf("]")+1);
+    const isPdf=name.toLowerCase().endsWith(".pdf");
+    if(isPdf){
+      return `<div style="display:flex;align-items:center;gap:10px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:10px 14px;min-width:160px">
+        <span style="font-size:26px;flex-shrink:0">📄</span>
+        <div style="min-width:0">
+          <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px">${name}</div>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <a href="${data}" target="_blank" style="font-size:11px;color:var(--accent);text-decoration:none">🔍 View</a>
+            <a href="${data}" download="${name}" style="font-size:11px;color:var(--accent);text-decoration:none">⬇ Download</a>
+          </div>
+        </div>
+      </div>`;
+    }
     return `<a href="${data}" download="${name}" style="color:var(--accent);text-decoration:none;font-size:13px;display:flex;align-items:center;gap:6px"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>${name}</a>`;
   }
   return _gcLinkify(msg);
 }
 
+let gcActiveId=null, gcActiveName="";
+
+function _renderGcMsgList(messages, myEmail){
+  if(!messages.length) return `<div style="text-align:center;color:var(--text-muted);margin:auto;font-size:13px">No messages yet. Say hello! 👋</div>`;
+  return messages.map(m=>{
+    const u=allUsers.find(u=>u.email===m.sender);
+    const name=u?u.name:m.sender.split("@")[0];
+    const isMe=m.sender===myEmail;
+    const canDel=isMe||isAdmin();
+    return `<div id="gcmsg_${m.id}" style="display:flex;flex-direction:column;align-items:${isMe?"flex-end":"flex-start"};position:relative" onmouseenter="this.querySelector('.gc-del')&&(this.querySelector('.gc-del').style.opacity='1')" onmouseleave="this.querySelector('.gc-del')&&(this.querySelector('.gc-del').style.opacity='0')">
+      <span style="font-size:10.5px;color:var(--text-muted);margin-bottom:2px">${isMe?"You":name}</span>
+      <div style="max-width:82%;padding:8px 12px;border-radius:${isMe?"12px 12px 2px 12px":"12px 12px 12px 2px"};background:${isMe?"var(--accent)":"var(--surface2)"};color:${isMe?"#000":"var(--text)"};font-size:13px;word-break:break-word;position:relative">
+        ${_gcRenderMsg(m.message)}
+        ${canDel?`<button class="gc-del" onclick="deleteGroupMessage(${m.id})" title="Delete" style="position:absolute;top:-8px;${isMe?"left":"right"}:-8px;background:var(--red);border:none;border-radius:50%;width:18px;height:18px;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;padding:0;line-height:1">✕</button>`:""}
+      </div>
+      <span style="font-size:10px;color:var(--text-muted);margin-top:2px">${m.sent_at?new Date(m.sent_at).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"}):""}</span>
+    </div>`;
+  }).join("");
+}
+
+async function refreshGcMessages(gid){
+  const myEmail=localStorage.getItem("jj_email")||"";
+  let messages=[];
+  try{ messages=await api("/groups/"+gid+"/messages"); }catch(e){ return; }
+  localStorage.setItem("jj_gc_seen_"+gid, messages.length.toString());
+  const box=document.getElementById("gcMessages");
+  if(!box) return;
+  const atBottom=box.scrollHeight-box.scrollTop-box.clientHeight<60;
+  box.innerHTML=_renderGcMsgList(messages, myEmail);
+  if(atBottom) setTimeout(()=>{ box.scrollTop=box.scrollHeight; },10);
+}
+
 async function openGroupChat(gid, gname){
+  gcActiveId=gid; gcActiveName=gname;
   const myEmail=localStorage.getItem("jj_email")||"";
   let messages=[];
   try{ messages=await api("/groups/"+gid+"/messages"); }catch(e){}
-  // Mark as seen
   localStorage.setItem("jj_gc_seen_"+gid, messages.length.toString());
   const existing=document.getElementById("groupChatPopup");
   if(existing) existing.remove();
   const popup=document.createElement("div");
   popup.id="groupChatPopup";
   popup.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px";
-  popup.onclick=function(e){ if(e.target===popup) popup.remove(); };
-  const gidS=gid; const gnameS=gname.replace(/'/g,"\\'");
+  popup.onclick=function(e){ if(e.target===popup){ gcActiveId=null; popup.remove(); } };
+  const gidS=gid;
   popup.innerHTML=`
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:500px;height:580px;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,0.5)">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border)">
       <div style="font-weight:700;font-size:15px">💬 ${gname}</div>
-      <button onclick="document.getElementById('groupChatPopup').remove()" style="background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;line-height:1">✕</button>
+      <button onclick="gcActiveId=null;document.getElementById('groupChatPopup').remove()" style="background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;line-height:1">✕</button>
     </div>
     <div id="gcMessages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px">
-      ${messages.length?messages.map(m=>{
-        const u=allUsers.find(u=>u.email===m.sender);
-        const name=u?u.name:m.sender.split("@")[0];
-        const isMe=m.sender===myEmail;
-        return `<div style="display:flex;flex-direction:column;align-items:${isMe?"flex-end":"flex-start"}">
-          <span style="font-size:10.5px;color:var(--text-muted);margin-bottom:2px">${isMe?"You":name}</span>
-          <div style="max-width:82%;padding:8px 12px;border-radius:${isMe?"12px 12px 2px 12px":"12px 12px 12px 2px"};background:${isMe?"var(--accent)":"var(--surface2)"};color:${isMe?"#000":"var(--text)"};font-size:13px;word-break:break-word">${_gcRenderMsg(m.message)}</div>
-          <span style="font-size:10px;color:var(--text-muted);margin-top:2px">${m.sent_at?new Date(m.sent_at).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"}):""}</span>
-        </div>`;
-      }).join(""):`<div style="text-align:center;color:var(--text-muted);margin:auto;font-size:13px">No messages yet. Say hello! 👋</div>`}
+      ${_renderGcMsgList(messages, myEmail)}
     </div>
     <div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center">
       <label title="Attach file" style="cursor:pointer;color:var(--text-muted);display:flex;align-items:center;padding:6px;border-radius:8px;border:1px solid var(--border);background:var(--surface2)">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
-        <input type="file" id="gcFileInput" style="display:none" onchange="gcAttachFile(${gidS},'${gnameS}')">
+        <input type="file" id="gcFileInput" accept="image/*,.pdf" style="display:none" onchange="gcAttachFile(${gidS})">
       </label>
-      <input id="gcInput" placeholder="Type a message or paste a link…" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-size:13px;outline:none" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendGroupMessage(${gidS},'${gnameS}')}">
-      <button onclick="sendGroupMessage(${gidS},'${gnameS}')" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:9px 16px;font-weight:700;cursor:pointer;font-size:13px">Send</button>
+      <input id="gcInput" placeholder="Type a message or paste a link…" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-size:13px;outline:none" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendGroupMessage(${gidS})}">
+      <button onclick="sendGroupMessage(${gidS})" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:9px 16px;font-weight:700;cursor:pointer;font-size:13px">Send</button>
     </div>
   </div>`;
   document.body.appendChild(popup);
@@ -3008,35 +3172,51 @@ async function openGroupChat(gid, gname){
   if(msgs) msgs.scrollTop=msgs.scrollHeight;
 }
 
-async function gcAttachFile(gid, gname){
+async function gcAttachFile(gid){
   const input=document.getElementById("gcFileInput");
   if(!input||!input.files.length) return;
   const file=input.files[0];
   const isImg=/^image\//.test(file.type);
+  const isPdf=file.type==="application/pdf"||file.name.toLowerCase().endsWith(".pdf");
+  if(!isImg&&!isPdf){showToast("Only images and PDFs are supported","error");input.value="";return;}
+  if(file.size>8*1024*1024){showToast("File too large — max 8 MB","error");input.value="";return;}
   const reader=new FileReader();
   reader.onload=async function(e){
     const prefix=isImg?`[img:${file.name}]`:`[file:${file.name}]`;
     const message=prefix+e.target.result;
     try{
       await api("/groups/"+gid+"/messages","POST",{message});
-      await openGroupChat(gid, gname);
+      await refreshGcMessages(gid);
+      showToast(isImg?"Image sent!":"File sent!","success");
     }catch(err){ showToast("Upload failed: "+err.message,"error"); }
   };
   reader.readAsDataURL(file);
   input.value="";
 }
 
-async function sendGroupMessage(gid, gname){
+async function sendGroupMessage(gid){
   const input=document.getElementById("gcInput");
   if(!input) return;
   const message=input.value.trim();
   if(!message) return;
+  input.value="";
   try{
     await api("/groups/"+gid+"/messages","POST",{message});
-    input.value="";
-    await openGroupChat(gid, gname);
+    await refreshGcMessages(gid);
   }catch(e){ showToast("Failed to send: "+e.message,"error"); }
 }
+
+async function deleteGroupMessage(mid){
+  if(!gcActiveId) return;
+  try{
+    await api("/groups/"+gcActiveId+"/messages/"+mid,"DELETE");
+    const el=document.getElementById("gcmsg_"+mid);
+    if(el) el.remove();
+    showToast("Message deleted","info");
+  }catch(e){ showToast("Failed: "+e.message,"error"); }
+}
+
+setInterval(()=>{ if(gcActiveId&&document.getElementById("gcMessages")) refreshGcMessages(gcActiveId); },4000);
 
 // ── GROUP MEMBER MANAGER ─────────────────────
 let gmGroupId=null, gmAdded=[], gmAll=[];
@@ -3616,21 +3796,89 @@ async function renderMyTasks(){
 
 
 // ════════════════════════════════════════════
+// INTERN SETTINGS (Edit Info + Password)
+// ════════════════════════════════════════════
+async function renderInternSettings(tab){
+  const tabBar=`
+  <div style="display:flex;gap:4px;margin-bottom:20px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:4px;width:fit-content">
+    <button onclick="renderInternSettings('editinfo')" style="padding:8px 20px;border-radius:7px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;${tab==="editinfo"?"background:var(--accent);color:#000":"background:transparent;color:var(--text-muted)"}">📝 Edit Info</button>
+    <button onclick="renderInternSettings('password')" style="padding:8px 20px;border-radius:7px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;${tab==="password"?"background:var(--accent);color:#000":"background:transparent;color:var(--text-muted)"}">🔑 Password</button>
+  </div>`;
+  if(tab==="password"){ renderSettingsTab("password", tabBar); return; }
+
+  // Edit Info tab
+  let info={phone:"",skill:"",state:"",college:"",edu_domain:"",name:currentUser,duration:""};
+  try{ info=await api("/candidates/me"); }catch(e){}
+
+  document.getElementById("mainContent").innerHTML=tabBar+`
+  <div class="table-card" style="max-width:560px">
+    <div class="table-card-header"><h3>📝 My Profile Info</h3></div>
+    <div style="padding:22px;display:flex;flex-direction:column;gap:14px">
+      <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--text-muted)">
+        Logged in as <strong style="color:var(--accent)">${info.name||currentUser}</strong> · <span style="color:var(--text-soft)">${info.email||localStorage.getItem("jj_email")||""}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field" style="margin:0">
+          <label>Phone</label>
+          <input id="ei_phone" value="${info.phone||""}" placeholder="9876543210"
+            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;box-sizing:border-box">
+        </div>
+        <div class="field" style="margin:0">
+          <label>Skills / Domain</label>
+          <input id="ei_skill" value="${info.skill||""}" placeholder="e.g. React JS, Python"
+            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;box-sizing:border-box">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field" style="margin:0">
+          <label>State</label>
+          <input id="ei_state" value="${info.state||""}" placeholder="e.g. Maharashtra"
+            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;box-sizing:border-box">
+        </div>
+        <div class="field" style="margin:0">
+          <label>College / University</label>
+          <input id="ei_college" value="${info.college||""}" placeholder="e.g. MIT Pune"
+            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;box-sizing:border-box">
+        </div>
+      </div>
+      <div class="field" style="margin:0">
+        <label>Education Domain</label>
+        <input id="ei_edu" value="${info.edu_domain||""}" placeholder="e.g. Computer Science"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;box-sizing:border-box">
+      </div>
+      <button class="btn-sm btn-accent" onclick="saveInternInfo()" style="align-self:flex-start;padding:10px 24px">💾 Save Changes</button>
+      <div id="eiStatus" style="font-size:13px"></div>
+    </div>
+  </div>`;
+}
+
+async function saveInternInfo(){
+  const status=document.getElementById("eiStatus");
+  status.innerHTML=`<span style="color:var(--accent)">⏳ Saving...</span>`;
+  try{
+    await api("/candidates/me","PATCH",{
+      phone:     document.getElementById("ei_phone")?.value.trim()||"",
+      skill:     document.getElementById("ei_skill")?.value.trim()||"",
+      state:     document.getElementById("ei_state")?.value.trim()||"",
+      college:   document.getElementById("ei_college")?.value.trim()||"",
+      edu_domain:document.getElementById("ei_edu")?.value.trim()||""
+    });
+    status.innerHTML=`<span style="color:var(--green)">✅ Info updated!</span>`;
+    showToast("Profile updated!","success");
+  }catch(e){
+    status.innerHTML=`<span style="color:var(--red)">❌ ${e.message}</span>`;
+  }
+}
+
+// ════════════════════════════════════════════
 // SETTINGS PAGE (Email + Password)
 // ════════════════════════════════════════════
 async function renderSettings(tab){
-  // Intern only sees password change
   if(isIntern()){
-    renderSettingsTab("password");
+    await renderInternSettings(tab||"editinfo");
     return;
   }
   tab=tab||"email";
-  const savedSvc  = localStorage.getItem("ejs_service")  || "";
-  const savedTpl  = localStorage.getItem("ejs_template") || "";
-  const savedKey  = localStorage.getItem("ejs_pubkey")   || "";
-  const configured = savedSvc && savedTpl && savedKey;
-
-  // Tab switcher header
   const tabBar=`
   <div style="display:flex;gap:4px;margin-bottom:20px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:4px;width:fit-content">
     <button onclick="renderSettings('email')" style="padding:8px 20px;border-radius:7px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;${tab==="email"?"background:var(--accent);color:#000":"background:transparent;color:var(--text-muted)"}">📧 Email</button>
@@ -3640,40 +3888,32 @@ async function renderSettings(tab){
   if(tab==="password"){ renderSettingsTab("password",tabBar); return; }
 
   document.getElementById("mainContent").innerHTML=tabBar+`
-  <!-- EmailJS Config -->
+  <!-- SMTP Config -->
   <div class="table-card" style="max-width:620px;margin-bottom:20px">
     <div class="table-card-header">
-      <h3>📧 Email Setup (EmailJS)</h3>
-      <span class="badge ${configured?"badge-green":"badge-red"}">${configured?"✅ Configured":"❌ Not Set"}</span>
+      <h3>📧 Email Setup (Gmail SMTP)</h3>
+      <span id="smtpBadge" class="badge badge-red">⏳ Checking...</span>
     </div>
     <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
-
-      <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:10px;padding:14px;font-size:13px;line-height:1.9">
-        <strong style="color:var(--accent)">Setup Steps (2 minutes, completely free):</strong><br>
-        1. Go to <a href="https://www.emailjs.com" target="_blank" style="color:var(--accent)">emailjs.com</a> → Sign Up Free (use your Gmail)<br>
-        2. <strong>Email Services</strong> → Add New Service → Gmail → Connect → Copy <strong>Service ID</strong><br>
-        3. <strong>Email Templates</strong> → Create New → set Subject: <code>{{subject}}</code>, Body: <code>{{message}}</code>, To: <code>{{to_email}}</code> → Save → Copy <strong>Template ID</strong><br>
-        4. <strong>Account</strong> → API Keys → Copy <strong>Public Key</strong>
+      <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:10px;padding:14px;font-size:13px;line-height:1.8">
+        <strong style="color:var(--accent)">How to get a Gmail App Password:</strong><br>
+        1. Go to <strong>myaccount.google.com</strong> → Security → 2-Step Verification (enable it)<br>
+        2. Search <strong>"App passwords"</strong> → Select app: <em>Mail</em>, device: <em>Other</em> → Generate<br>
+        3. Copy the 16-character password shown → paste below
       </div>
-
       <div class="field">
-        <label>Service ID <span style="color:var(--text-muted);font-size:11px">e.g. service_abc123</span></label>
-        <input id="ejsService" placeholder="service_xxxxxxx" value="${savedSvc}"
+        <label>Gmail Address <span style="color:var(--text-muted);font-size:11px">e.g. yourname@gmail.com</span></label>
+        <input id="smtpEmail" type="email" placeholder="yourname@gmail.com"
           style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;box-sizing:border-box">
       </div>
       <div class="field">
-        <label>Template ID <span style="color:var(--text-muted);font-size:11px">e.g. template_abc123</span></label>
-        <input id="ejsTemplate" placeholder="template_xxxxxxx" value="${savedTpl}"
+        <label>Gmail App Password <span style="color:var(--text-muted);font-size:11px">16-character app password (not your Gmail password)</span></label>
+        <input id="smtpPass" type="password" placeholder="xxxx xxxx xxxx xxxx"
           style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;box-sizing:border-box">
       </div>
-      <div class="field">
-        <label>Public Key <span style="color:var(--text-muted);font-size:11px">e.g. aBcDeFgHiJkLmNoP</span></label>
-        <input id="ejsKey" placeholder="your public key" value="${savedKey}"
-          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;box-sizing:border-box">
-      </div>
-      <div style="display:flex;gap:10px">
-        <button class="btn-sm btn-accent" onclick="saveEmailJSConfig()">💾 Save Config</button>
-        <button class="btn-sm btn-outline" onclick="testEmailJS()">📤 Send Test Email</button>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn-sm btn-accent" onclick="saveSmtpConfig()">💾 Save Config</button>
+        <button class="btn-sm btn-outline" onclick="testSmtpEmail()">📤 Send Test Email</button>
       </div>
       <div id="cfgStatus" style="font-size:13px"></div>
     </div>
@@ -3716,12 +3956,14 @@ async function renderSettings(tab){
       <div id="mailStatus" style="font-size:13px"></div>
     </div>
   </div>`;
+  // Load current config status
+  loadSmtpStatus();
 }
 
 // Renders the password-change tab, optionally prepending a tab bar
 function renderSettingsTab(tab, prepend=""){
   const isInternUser=isIntern();
-  const tabBar=isInternUser?"":prepend||`
+  const tabBar=prepend||`
   <div style="display:flex;gap:4px;margin-bottom:20px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:4px;width:fit-content">
     <button onclick="renderSettings('email')" style="padding:8px 20px;border-radius:7px;border:none;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--text-muted)">📧 Email</button>
     <button onclick="renderSettings('password')" style="padding:8px 20px;border-radius:7px;border:none;font-size:13px;font-weight:600;cursor:pointer;background:var(--accent);color:#000">🔑 Password</button>
@@ -3767,47 +4009,78 @@ function saveEmailJSConfig(){
   document.getElementById("cfgStatus").innerHTML=`<span style="color:var(--green)">✅ Config saved! Click Send Test Email to verify.</span>`;
 }
 
-async function testEmailJS(){
-  const adminEmail = localStorage.getItem("jj_email") || "";
-  if(!adminEmail){ showToast("Not logged in","error"); return; }
-  const ok = await sendEmailJS(adminEmail, "Admin", "Job Jockey — Email Test", "This is a test email from Job Jockey. Your EmailJS config is working correctly!");
-  if(ok) document.getElementById("cfgStatus").innerHTML=`<span style="color:var(--green)">✅ Test email sent to ${adminEmail}</span>`;
-}
-
-// ── EmailJS credentials (from admin settings only) ──────────
-const EJS_SERVICE  = localStorage.getItem("ejs_service")  || "";
-const EJS_TEMPLATE = localStorage.getItem("ejs_template") || "";
-const EJS_KEY      = localStorage.getItem("ejs_pubkey")   || "";
-
-async function sendEmailJS(toEmail, toName, subject, message){
-  const svc = localStorage.getItem("ejs_service")  || "";
-  const tpl = localStorage.getItem("ejs_template") || "";
-  const key = localStorage.getItem("ejs_pubkey")   || "";
-
-  if(!svc||!tpl||!key){
-    showToast("Email not configured — go to Settings → Email to add your EmailJS keys","error");
+// ── Backend SMTP email (replaces EmailJS) ────────
+async function sendEmail(toEmail, toName, subject, message){
+  if(!toEmail||!toEmail.includes("@")){
+    showToast("Cannot send email — invalid recipient address","error");
     return false;
   }
   try{
-    if(typeof emailjs === "undefined"){
-      showToast("EmailJS not loaded. Check internet connection.","error");
-      return false;
-    }
-    emailjs.init(key);
-    await emailjs.send(svc, tpl, {
-      to_email:  toEmail,
-      to_name:   toName || toEmail.split("@")[0],
-      subject:   subject,
-      message:   message,
-      from_name: "Job Jockey Platform"
-    });
+    await api("/email/send","POST",{to_email:toEmail,to_name:toName||"",subject,message});
     return true;
   }catch(e){
-    console.error("EmailJS error:", e);
-    showToast("Email failed: "+(e.text||e.message||"Unknown error"),"error");
+    const msg=e.message||"";
+    if(msg.includes("not configured")){
+      showToast("Email not configured — go to Settings → Email to set Gmail + App Password","error");
+    } else {
+      showToast("Email failed: "+msg,"error");
+    }
     return false;
   }
 }
+
+async function loadSmtpStatus(){
+  try{
+    const cfg=await api("/config/email");
+    const badge=document.getElementById("smtpBadge");
+    if(!badge) return;
+    if(cfg.smtp_configured){
+      badge.className="badge badge-green";
+      badge.textContent="✅ Configured ("+cfg.smtp_email+")";
+      document.getElementById("smtpEmail").value=cfg.smtp_email||"";
+      document.getElementById("smtpPass").value=cfg.smtp_pass_set?"********":"";
+    } else {
+      badge.className="badge badge-red";
+      badge.textContent="❌ Not Configured";
+    }
+  }catch(e){}
+}
+
+async function saveSmtpConfig(){
+  const email=document.getElementById("smtpEmail")?.value.trim();
+  const pass =document.getElementById("smtpPass")?.value.trim();
+  const st   =document.getElementById("cfgStatus");
+  if(!email){showToast("Enter Gmail address","error");return;}
+  if(!pass) {showToast("Enter App Password","error");return;}
+  st.innerHTML=`<span style="color:var(--accent)">⏳ Saving...</span>`;
+  try{
+    await api("/config/email","POST",{smtp_email:email,smtp_pass:pass});
+    showToast("Email config saved!","success");
+    st.innerHTML=`<span style="color:var(--green)">✅ Saved! Click Send Test Email to verify.</span>`;
+    loadSmtpStatus();
+  }catch(e){
+    st.innerHTML=`<span style="color:var(--red)">❌ ${e.message}</span>`;
+  }
+}
+
+async function testSmtpEmail(){
+  const st=document.getElementById("cfgStatus");
+  st.innerHTML=`<span style="color:var(--accent)">⏳ Sending test email...</span>`;
+  try{
+    const r=await api("/email/test","POST",{});
+    showToast("Test email sent!","success");
+    st.innerHTML=`<span style="color:var(--green)">✅ ${r.msg}</span>`;
+  }catch(e){
+    st.innerHTML=`<span style="color:var(--red)">❌ ${e.message}</span>`;
+  }
+}
+
+// Legacy stub so any old references don't crash
+async function sendEmailJS(toEmail, toName, subject, message){
+  return sendEmail(toEmail, toName, subject, message);
+}
+function saveEmailJSConfig(){ renderSettings("email"); }
+async function testEmailJS(){ await testSmtpEmail(); }
 
 async function sendCustomEmail(){
   const to      = document.getElementById("mailTo")?.value.trim();
@@ -3819,7 +4092,7 @@ async function sendCustomEmail(){
   if(!body)   { showToast("Write a message","error"); return; }
   const status = document.getElementById("mailStatus");
   status.innerHTML = `<span style="color:var(--accent)">⏳ Sending to ${to}...</span>`;
-  const ok = await sendEmailJS(to, name, subject, body);
+  const ok = await sendEmail(to, name, subject, body);
   if(ok){
     status.innerHTML = `<span style="color:var(--green)">✅ Email sent to ${to}!</span>`;
     showToast("Email sent!","success");
@@ -4022,11 +4295,6 @@ window.onload=async ()=>{
   const loading = document.getElementById("loadingScreen");
 
   const hide = ()=>{ if(loading) loading.style.display="none"; };
-
-  // Force update EmailJS credentials every time
-  localStorage.setItem("ejs_service",  "lbdt qhfe fjjs pfhx");
-  localStorage.setItem("ejs_template", "template_9fdt08j");
-  localStorage.setItem("ejs_pubkey",   "hGVTdWAxjoz4EdTlk");
 
   // Safety net — always hide spinner after 4 seconds maximum
   setTimeout(hide, 4000);

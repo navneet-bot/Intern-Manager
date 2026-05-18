@@ -150,3 +150,9 @@ class ChatMessage(Base):
     receiver_id = Column(Integer, index=True)              # 0 = broadcast
     message     = Column(Text, nullable=False)
     sent_at     = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Config(Base):
+    __tablename__ = "config"
+    key   = Column(String, primary_key=True)
+    value = Column(Text, default="")
