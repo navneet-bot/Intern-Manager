@@ -3768,10 +3768,10 @@ function saveEmailJSConfig(){
 }
 
 async function testEmailJS(){
-  const to = document.getElementById("ejsService") ? 
-    (document.getElementById("cfgEmail")?.value || localStorage.getItem("ejs_service")) : "";
-  const adminEmail = currentUser;
-  await sendEmailJS(adminEmail, "Admin", "Job Jockey — Email Test", "This is a test email. Email is working correctly!");
+  const adminEmail = localStorage.getItem("jj_email") || "";
+  if(!adminEmail){ showToast("Not logged in","error"); return; }
+  const ok = await sendEmailJS(adminEmail, "Admin", "Job Jockey — Email Test", "This is a test email from Job Jockey. Your EmailJS config is working correctly!");
+  if(ok) document.getElementById("cfgStatus").innerHTML=`<span style="color:var(--green)">✅ Test email sent to ${adminEmail}</span>`;
 }
 
 // ── EmailJS credentials (from admin settings only) ──────────
@@ -3780,10 +3780,14 @@ const EJS_TEMPLATE = localStorage.getItem("ejs_template") || "";
 const EJS_KEY      = localStorage.getItem("ejs_pubkey")   || "";
 
 async function sendEmailJS(toEmail, toName, subject, message){
-  const svc = localStorage.getItem("ejs_service")  || "lbdt qhfe fjjs pfhx";
-  const tpl = localStorage.getItem("ejs_template") || "template_9fdt08j";
-  const key = localStorage.getItem("ejs_pubkey")   || "hGVTdWAxjoz4EdTlk";
+  const svc = localStorage.getItem("ejs_service")  || "";
+  const tpl = localStorage.getItem("ejs_template") || "";
+  const key = localStorage.getItem("ejs_pubkey")   || "";
 
+  if(!svc||!tpl||!key){
+    showToast("Email not configured — go to Settings → Email to add your EmailJS keys","error");
+    return false;
+  }
   try{
     if(typeof emailjs === "undefined"){
       showToast("EmailJS not loaded. Check internet connection.","error");
