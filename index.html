@@ -328,6 +328,19 @@
   .notif-popup-item.unread{border-left:2px solid var(--accent)}
   .notif-popup-title{font-size:13px;font-weight:600;margin-bottom:2px}
   .notif-popup-body{font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* ── LIVE NOTIFICATION BANNER (right side) ── */
+  #liveNotifArea{position:fixed;top:72px;right:20px;z-index:9998;display:flex;flex-direction:column;gap:8px;pointer-events:none;width:320px}
+  .live-notif{background:var(--surface);border:1px solid rgba(245,158,11,0.4);border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,0.6);padding:13px 14px;display:flex;align-items:flex-start;gap:10px;pointer-events:all;cursor:pointer;animation:lnIn .3s cubic-bezier(.21,1.02,.73,1) forwards}
+  .live-notif.lnDismiss{transition:opacity .25s,transform .25s;opacity:0;transform:translateX(22px)}
+  .live-notif-icon{font-size:20px;flex-shrink:0;line-height:1.3}
+  .live-notif-content{flex:1;min-width:0}
+  .live-notif-title{font-size:13px;font-weight:600;color:var(--text);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .live-notif-body{font-size:11.5px;color:var(--text-muted);margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical}
+  .live-notif-hint{font-size:10.5px;color:var(--accent);margin-top:4px;opacity:.8}
+  .live-notif-close{background:none;border:none;color:var(--text-muted);font-size:15px;cursor:pointer;padding:0;line-height:1;flex-shrink:0}
+  .live-notif-close:hover{color:var(--text)}
+  @keyframes lnIn{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:translateX(0)}}
   .notif-popup-footer{padding:10px 16px;border-top:1px solid var(--border);text-align:center}
   .notif-popup-footer a{font-size:12.5px;color:var(--accent);cursor:pointer;text-decoration:none}
 
@@ -354,6 +367,7 @@
 <body>
 
 <div id="toast-area"></div>
+<div id="liveNotifArea"></div>
 
 <!-- Notification popup panel -->
 <div id="notifPopup">
@@ -2780,6 +2794,36 @@ setInterval(()=>{if(selectedReceiverId&&document.getElementById("chatMsgs"))fetc
 let _lastNotifCount=0;
 let _notifPopupOpen=false;
 
+function getNotifNav(n){
+  if((n.title||"").includes(" in ")&&n.icon==="💬") return "groups";
+  if(n.icon==="💬") return "chat";
+  if(n.icon==="👥") return "groups";
+  if(n.icon==="📋") return isIntern()?"mytasks":"tasks";
+  if(n.icon==="📅") return "meetings";
+  if(n.icon==="📄") return "reports";
+  return "";
+}
+
+function showLiveNotif(n){
+  const area=document.getElementById("liveNotifArea");
+  if(!area) return;
+  const el=document.createElement("div");
+  el.className="live-notif";
+  el.innerHTML=`<div class="live-notif-icon">${n.icon||"🔔"}</div>
+    <div class="live-notif-content">
+      <div class="live-notif-title">${n.title||""}</div>
+      ${n.body?`<div class="live-notif-body">${n.body}</div>`:""}
+      <div class="live-notif-hint">Tap to open Notifications →</div>
+    </div>
+    <button class="live-notif-close" onclick="event.stopPropagation();this.closest('.live-notif').remove()">✕</button>`;
+  el.addEventListener("click",()=>{el.remove();navTo("notifications");});
+  area.appendChild(el);
+  setTimeout(()=>{
+    el.classList.add("lnDismiss");
+    setTimeout(()=>el.remove(),270);
+  },5000);
+}
+
 function playNotifSound(){
   try{
     const ctx=new(window.AudioContext||window.webkitAudioContext)();
@@ -2807,14 +2851,11 @@ async function pollNotifications(){
     if(dot){
       dot.classList.toggle("visible",unread>0);
     }
-    // Play sound and show mini-toast for new notifications
+    // Play sound and show live notification banners for new notifications
     if(unread>_lastNotifCount && _lastNotifCount>=0 && document.visibilityState!=="hidden"){
       playNotifSound();
-      const newest=data.find(n=>!n.read);
-      if(newest){
-        const preview=newest.body?`${newest.icon||"🔔"} ${newest.title}: ${newest.body.slice(0,60)}`:`${newest.icon||"🔔"} ${newest.title}`;
-        showToast(preview,"info");
-      }
+      const newCount=unread-_lastNotifCount;
+      data.filter(n=>!n.read).slice(0,newCount).forEach(n=>showLiveNotif(n));
     }
     _lastNotifCount=unread;
     // Update popup list if open
@@ -2831,17 +2872,10 @@ function buildNotifPopupList(data){
     return;
   }
   list.innerHTML=recent.map(n=>{
-    // Decide where tapping the notification should navigate
-    let nav="";
-    if(n.title.includes(" in ") && n.icon==="💬") nav="groups";
-    else if(n.icon==="💬") nav="chat";
-    else if(n.icon==="👥") nav="groups";
-    else if(n.icon==="📋") nav=isIntern()?"mytasks":"tasks";
-    else if(n.icon==="📅") nav="meetings";
-    else if(n.icon==="📄") nav="reports";
+    const nav=getNotifNav(n);
     const onclick=nav
       ? `markNotifRead(${n.id});closeNotifPopup();navTo('${nav}')`
-      : `markNotifRead(${n.id})`;
+      : `markNotifRead(${n.id});closeNotifPopup();navTo('notifications')`;
     return `<div class="notif-popup-item ${n.read?"":"unread"}" onclick="${onclick}" style="cursor:pointer">
       <div class="notif-popup-title">${n.icon||"🔔"} ${n.title}</div>
       <div class="notif-popup-body">${n.body||""}</div>
@@ -3553,19 +3587,21 @@ async function renderNotifications(){
     let seenList=[];
     try{seenList=JSON.parse(n.seen_by||"[]");}catch(e){}
     const seenNames=seenList.map(email=>{const u=allUsers.find(u=>u.email===email);return u?u.name.split(" ")[0]:email.split("@")[0];});
-    return `<div class="notif-item ${n.read?"":"unread"}">
+    const nav=getNotifNav(n);
+    const navAction=nav?`markRead(${n.id});navTo('${nav}')`:`markRead(${n.id})`;
+    return `<div class="notif-item ${n.read?"":"unread"}" onclick="${navAction}" style="cursor:pointer">
       <div class="notif-icon" style="background:rgba(245,158,11,0.12)">${n.icon||"🔔"}</div>
       <div class="notif-body" style="flex:1">
         <h5>${n.title}</h5>
         <p>${n.body||""}</p>
-        <div class="notif-time">${n.created_at?new Date(n.created_at).toLocaleString("en-IN"):"now"}</div>
+        <div class="notif-time">${n.created_at?new Date(n.created_at).toLocaleString("en-IN"):"now"}${nav?` &nbsp;·&nbsp; <span style="color:var(--accent);font-size:10.5px">Go to ${nav} →</span>`:""}</div>
         ${hasPermission("send_notifications")?seenList.length?`
         <div style="margin-top:6px;display:flex;align-items:center;gap:5px;flex-wrap:wrap">
           <span style="font-size:11px;color:var(--text-muted)">👁 Seen by (${seenList.length}):</span>
           ${seenNames.map(name=>`<span style="font-size:11px;padding:2px 7px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);border-radius:20px;color:var(--green)">${name}</span>`).join("")}
         </div>`:`<div style="margin-top:4px;font-size:11px;color:var(--text-muted)">👁 Not seen by anyone yet</div>`:""}
       </div>
-      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0" onclick="event.stopPropagation()">
         ${!n.read?`<button class="action-btn action-approve" onclick="markRead(${n.id})">✓ Read</button>`:""}
         ${hasPermission("send_notifications")?`<button class="action-btn action-reject" onclick="deleteNotif(${n.id})">🗑</button>`:""}
       </div>
