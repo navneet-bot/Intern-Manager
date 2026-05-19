@@ -1486,8 +1486,16 @@ function _autoMapFields(headers){
 function _parseExcel(buffer){
   const wb=XLSX.read(buffer,{type:"array"});
   const ws=wb.Sheets[wb.SheetNames[0]];
-  const data=XLSX.utils.sheet_to_json(ws,{header:1,defval:""});
-  return data.filter(r=>r.length>0).map(r=>r.map(c=>String(c??"")));
+  const data=XLSX.utils.sheet_to_json(ws,{header:1,defval:"",raw:false});
+  return data.filter(r=>r.length>0).map(r=>r.map(c=>{
+    if(c===null||c===undefined) return "";
+    // Fix phone numbers stored as scientific notation (e.g. 7.4E+09 → 7400000000)
+    const s=String(c).trim();
+    if(/^\d+(\.\d+)?[eE][+]?\d+$/.test(s)){
+      return String(Math.round(Number(s)));
+    }
+    return s;
+  }));
 }
 
 function _parseCsv(text){
@@ -1506,10 +1514,18 @@ function _parseCsv(text){
 
 function _buildImportPreview(rows, mapping, headers){
   const mapped=CSV_FIELDS.filter(f=>mapping[f.key]!==undefined);
+  const emailRe=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
   const thStyle="background:rgba(255,255,255,0.05);padding:6px 10px;font-size:11px;color:var(--text-muted);white-space:nowrap;text-align:left";
   const tdStyle="padding:5px 10px;border-top:1px solid var(--border);white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:12px";
-  const head=`<tr>${mapped.map(f=>`<th style="${thStyle}">${f.icon} ${f.label}</th>`).join("")}</tr>`;
-  const body=rows.slice(0,5).map(row=>`<tr>${mapped.map(f=>`<td style="${tdStyle}">${row[mapping[f.key]]||"—"}</td>`).join("")}</tr>`).join("");
+  const head=`<tr><th style="${thStyle}">⚠️</th>${mapped.map(f=>`<th style="${thStyle}">${f.icon} ${f.label}</th>`).join("")}</tr>`;
+  const body=rows.slice(0,8).map(row=>{
+    const name=(row[mapping.name]??"").trim();
+    const email=(row[mapping.email]??"").trim();
+    const invalid=!name||!email||!emailRe.test(email);
+    const rowStyle=invalid?"background:rgba(239,68,68,0.07)":"";
+    const flag=invalid?`<td style="padding:5px 8px;border-top:1px solid var(--border);color:var(--red);font-size:11px" title="${!name?"no name":!email?"no email":"invalid email"}">⚠️</td>`:`<td style="padding:5px 8px;border-top:1px solid var(--border);color:var(--green);font-size:11px">✅</td>`;
+    return `<tr style="${rowStyle}">${flag}${mapped.map(f=>`<td style="${tdStyle}">${row[mapping[f.key]]||"—"}</td>`).join("")}</tr>`;
+  }).join("");
   return {head,body};
 }
 
@@ -1605,14 +1621,16 @@ async function importCsvData(){
   const btn=document.querySelector("#csvPreviewPanel .btn-accent");
   if(btn){btn.disabled=true;btn.textContent="⏳ Importing...";}
 
-  // Indices already used by known fields
+  const emailRe=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
   const usedIdx=new Set(Object.values(map).filter(v=>v!==undefined));
 
-  let imported=0, skipped=0, dupes=0;
+  let imported=0, dupes=0, badEmail=0, empty=0, apiErr=0;
   for(const row of csvRows){
     const name =(row[map.name]??"").trim();
     const email=(row[map.email]??"").trim().toLowerCase();
-    if(!name||!email){skipped++;continue;}
+
+    if(!name||!email){empty++;continue;}
+    if(!emailRe.test(email)){badEmail++;continue;}  // skip junk rows like "model training"
 
     // Collect extra columns not mapped to any known field
     const extra={};
@@ -1634,15 +1652,17 @@ async function importCsvData(){
     };
     try{await api("/candidates","POST",body);imported++;}
     catch(e){
-      if(e.message&&e.message.includes("409")) dupes++;
-      else skipped++;
+      if(e.message&&(e.message.includes("409")||e.message.includes("400"))) dupes++;
+      else apiErr++;
     }
   }
   if(btn){btn.disabled=false;btn.textContent="✓ Import All";}
   const parts=[`✅ ${imported} imported`];
-  if(dupes) parts.push(`${dupes} already exist`);
-  if(skipped) parts.push(`${skipped} skipped`);
-  showToast(parts.join(" · "),"success");
+  if(dupes)     parts.push(`${dupes} already exist`);
+  if(badEmail)  parts.push(`${badEmail} invalid email (skipped)`);
+  if(empty)     parts.push(`${empty} empty rows (skipped)`);
+  if(apiErr)    parts.push(`${apiErr} errors`);
+  showToast(parts.join(" · "),imported>0?"success":"error");
   document.getElementById("csvPreviewPanel").style.display="none";
   setTimeout(()=>renderCandidates(),600);
 }
