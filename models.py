@@ -55,9 +55,10 @@ class Candidate(Base):
     status     = Column(String, default="Pending")
     state      = Column(String, default="")
     college    = Column(String, default="")
-    edu_domain = Column(String, default="")
-    duration   = Column(String, default="")
-    applied_at = Column(DateTime(timezone=True), server_default=func.now())
+    edu_domain  = Column(String, default="")
+    duration    = Column(String, default="")
+    extra_data  = Column(Text, default="")   # JSON: extra CSV columns not in standard fields
+    applied_at  = Column(DateTime(timezone=True), server_default=func.now())
 
 
 class Attendance(Base):

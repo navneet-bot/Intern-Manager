@@ -115,6 +115,7 @@ class CandidateCreate(BaseModel):
     college: Optional[str] = ""
     edu_domain: Optional[str] = ""
     duration: Optional[str] = ""
+    extra_data: Optional[str] = ""   # JSON string of extra CSV columns
 
 class CandidateUpdate(BaseModel):
     name: Optional[str] = None
@@ -142,6 +143,7 @@ class CandidateOut(BaseModel):
     college: Optional[str] = ""
     edu_domain: Optional[str] = ""
     duration: Optional[str] = ""
+    extra_data: Optional[str] = ""
     applied_at: Optional[datetime] = None
 
     class Config:

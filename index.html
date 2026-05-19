@@ -1454,10 +1454,10 @@ const CSV_FIELDS=[
   {key:"name",       label:"Name",        required:true,  icon:"👤", kw:["name","full name","student name","candidate","applicant","intern name"]},
   {key:"email",      label:"Email",       required:true,  icon:"📧", kw:["email","e-mail","mail","email address","email id"]},
   {key:"phone",      label:"Phone",       required:false, icon:"📱", kw:["phone","mobile","contact","cell","phone no","mobile no","contact no","whatsapp"]},
-  {key:"skill",      label:"Skills/Role", required:false, icon:"💼", kw:["skill","role","position","domain","area","interest","stream","apply","applying","applying for","internship role","field"]},
+  {key:"skill",      label:"Skills/Role", required:false, icon:"💼", kw:["skill","role","position","applying for","internship role","technology","tech stack","job profile","profile"]},
   {key:"college",    label:"College",     required:false, icon:"🏫", kw:["college","university","institution","institute","school","campus","college name","university name"]},
   {key:"state",      label:"State",       required:false, icon:"📍", kw:["state","location","city","place","address","from","hometown","district"]},
-  {key:"edu_domain", label:"Branch",      required:false, icon:"🎓", kw:["branch","department","course","degree","specialization","edu","field of study","program","programme","study"]},
+  {key:"edu_domain", label:"Branch",      required:false, icon:"🎓", kw:["branch","department","course","degree","specialization","domain","stream","field","program","programme","study","edu"]},
   {key:"duration",   label:"Duration",    required:false, icon:"📅", kw:["duration","period","months","weeks","internship duration","tenure","how long","availability"]},
   {key:"resume_link",label:"Resume Link", required:false, icon:"📄", kw:["resume","cv","portfolio","drive link","resume link","attachment","document","gdrive","google drive"]},
 ];
@@ -1577,11 +1577,21 @@ async function importCsvData(){
   const btn=document.querySelector("#csvPreviewPanel .btn-accent");
   if(btn){btn.disabled=true;btn.textContent="⏳ Importing...";}
 
+  // Indices already used by known fields
+  const usedIdx=new Set(Object.values(map).filter(v=>v!==undefined));
+
   let imported=0, skipped=0, dupes=0;
   for(const row of csvRows){
     const name =(row[map.name]??"").trim();
     const email=(row[map.email]??"").trim().toLowerCase();
     if(!name||!email){skipped++;continue;}
+
+    // Collect extra columns not mapped to any known field
+    const extra={};
+    csvHeaders.forEach((h,i)=>{
+      if(!usedIdx.has(i)&&(row[i]??"").trim()) extra[h]=(row[i]??"").trim();
+    });
+
     const body={
       name, email,
       phone:      map.phone!==undefined      ?(row[map.phone]??"").trim():"",
@@ -1591,7 +1601,8 @@ async function importCsvData(){
       edu_domain: map.edu_domain!==undefined ?(row[map.edu_domain]??"").trim():"",
       duration:   map.duration!==undefined   ?(row[map.duration]??"").trim():"",
       resume_link:map.resume_link!==undefined?(row[map.resume_link]??"").trim():"",
-      resume:""
+      resume:"",
+      extra_data: Object.keys(extra).length?JSON.stringify(extra):""
     };
     try{await api("/candidates","POST",body);imported++;}
     catch(e){
@@ -1696,11 +1707,18 @@ async function importMappedData(){
   if(sheetFieldMap.email === undefined){ showToast("Email column not detected in sheet","error"); return; }
   if(!currentSheetId){ showToast("Fetch the sheet first","error"); return; }
 
-  // Build field_map as {field_key: header_name} for ALL detected fields
+  // Build field_map: known fields + all unmapped headers stored under extra_data
   const fieldMap = {};
+  const usedHeaders = new Set();
   for(const f of CSV_FIELDS){
-    if(sheetFieldMap[f.key] !== undefined) fieldMap[f.key] = sheetHeaders[sheetFieldMap[f.key]];
+    if(sheetFieldMap[f.key] !== undefined){
+      fieldMap[f.key] = sheetHeaders[sheetFieldMap[f.key]];
+      usedHeaders.add(sheetHeaders[sheetFieldMap[f.key]]);
+    }
   }
+  // Pass extra column names so backend can store them
+  const extraHeaders = sheetHeaders.filter(h => !usedHeaders.has(h));
+  if(extraHeaders.length) fieldMap._extra_headers = extraHeaders;
 
   const status = document.getElementById("syncStatus");
   status.innerHTML = `<span style="color:var(--accent)">⏳ Importing candidates...</span>`;

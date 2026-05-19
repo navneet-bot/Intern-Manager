@@ -3,7 +3,7 @@ import sqlite3
 conn = sqlite3.connect('jobjockey.db')
 c = conn.cursor()
 
-new_cols = ['state', 'college', 'edu_domain', 'duration']
+new_cols = ['state', 'college', 'edu_domain', 'duration', 'extra_data']
 
 existing = [r[1] for r in c.execute('PRAGMA table_info(candidates)').fetchall()]
 print("Existing columns:", existing)

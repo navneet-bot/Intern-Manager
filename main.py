@@ -22,6 +22,23 @@ from permissions import has_permission
 
 models.Base.metadata.create_all(bind=engine)
 
+# Auto-migrate: add new columns if they don't exist yet
+def _run_migrations():
+    import sqlite3
+    db_path = "jobjockey.db"
+    if not os.path.exists(db_path):
+        return
+    conn = sqlite3.connect(db_path)
+    c = conn.cursor()
+    existing = [r[1] for r in c.execute("PRAGMA table_info(candidates)").fetchall()]
+    for col in ["state", "college", "edu_domain", "duration", "resume_link", "extra_data"]:
+        if col not in existing:
+            c.execute(f"ALTER TABLE candidates ADD COLUMN {col} TEXT DEFAULT ''")
+            conn.commit()
+    conn.close()
+
+_run_migrations()
+
 # ── Password helpers (bcrypt direct — avoids passlib/bcrypt 4.x compat issues) ─
 def hash_password(plain: str) -> str:
     pw = (plain or "").encode("utf-8")[:72]   # bcrypt hard limit is 72 bytes
@@ -381,6 +398,7 @@ def import_google_form_candidates(data: schemas.GoogleFormImportRequest, db: Ses
         raise HTTPException(400, str(exc))
 
     field_map = data.field_map or {}
+    extra_headers = field_map.pop("_extra_headers", [])
     created = []
     skipped = []
     for row in rows:
@@ -392,6 +410,7 @@ def import_google_form_candidates(data: schemas.GoogleFormImportRequest, db: Ses
         if data.skip_existing and db.query(models.Candidate).filter(models.Candidate.email == email).first():
             skipped.append({"reason": "email exists", "email": email})
             continue
+        extra = {h: row.get(h, "") for h in extra_headers if row.get(h, "").strip()}
         candidate = models.Candidate(
             name=name,
             email=email,
@@ -402,6 +421,7 @@ def import_google_form_candidates(data: schemas.GoogleFormImportRequest, db: Ses
             edu_domain=row.get(field_map.get("edu_domain", "Education Domain"), "").strip(),
             duration=row.get(field_map.get("duration", "Duration"), "").strip(),
             resume_link=row.get(field_map.get("resume_link", "Resume Link"), "").strip(),
+            extra_data=json.dumps(extra) if extra else "",
             status=data.status or "Pending"
         )
         db.add(candidate)
