@@ -1254,7 +1254,7 @@ async function renderCandidates(){
           <td>${c.skill||"—"}</td>
           <td>${c.edu_domain||"—"}</td>
           <td>${c.duration||"—"}</td>
-          <td>${c.resume&&!c.resume.startsWith("LOGIN:")?`<a href="${c.resume}" target="_blank" style="color:var(--accent);font-size:12px">View</a>`:"—"}</td>
+          <td>${c.resume_link?`<a href="${c.resume_link}" target="_blank" style="color:var(--accent);font-size:12px">View</a>`:c.resume&&!c.resume.startsWith("LOGIN:")?`<a href="${c.resume}" target="_blank" style="color:var(--accent);font-size:12px">View</a>`:"—"}</td>
           <td>${statusBadge(c.status)}</td>
           <td style="font-size:12px;color:var(--accent)">${jjEmail}</td>
         </tr>`;
@@ -1402,7 +1402,7 @@ async function renderCandidates(){
         <td style="max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.college||"—"}</td>
         <td>${c.edu_domain||"—"}</td>
         <td>${c.duration||"—"}</td>
-        <td>${c.resume&&!c.resume.startsWith("LOGIN:")?`<a href="${c.resume}" target="_blank" style="color:var(--accent);font-size:12px">View</a>`:"—"}</td>
+        <td>${c.resume_link?`<a href="${c.resume_link}" target="_blank" style="color:var(--accent);font-size:12px">View</a>`:c.resume&&!c.resume.startsWith("LOGIN:")?`<a href="${c.resume}" target="_blank" style="color:var(--accent);font-size:12px">View</a>`:"—"}</td>
         <td style="display:flex;gap:4px;flex-wrap:wrap">
           ${c.status==="Pending"?`<button class="action-btn action-approve" onclick="updateCandidate(${c.id},'Approved')" title="Approve">✓</button><button class="action-btn action-reject" onclick="updateCandidate(${c.id},'Rejected')" title="Reject">✗</button>`:""}
           ${c.status==="Approved"?`<button class="action-btn action-edit" onclick="goAssignTask(${JSON.stringify(c.email).replace(/"/g,'&quot;')},${JSON.stringify(c.name).replace(/"/g,'&quot;')})" title="Assign Task">📋</button>`:""}
@@ -1728,9 +1728,9 @@ async function updateCandidate(id,status){
     } else {
       showToast("Candidate "+status.toLowerCase(),"info");
     }
-    // After approval, switch to Approved tab so new intern appears there
-    if(status==="Approved") candidateTab="applications";
-    renderCandidates();
+    candidateTab = status==="Approved" ? "applications" : candidateTab;
+    await renderCandidates();
+    if(status==="Approved") setCandidateTab("applications");
   }
   catch(e){showToast("Failed: "+e.message,"error");}
 }
@@ -3668,7 +3668,11 @@ async function sendNotification(){
 }
 
 async function markRead(id){
-  try{await api("/notifications/"+id+"/read","PATCH");renderNotifications();}catch(e){}
+  try{
+    await api("/notifications/"+id+"/read","PATCH");
+    if(currentSection==="notifications") renderNotifications();
+    else pollNotifications();
+  }catch(e){}
 }
 async function markAllRead(){
   try{
@@ -4405,10 +4409,16 @@ window.onload=async ()=>{
         localStorage.setItem("jj_user", currentUser);
         localStorage.setItem("jj_uid", currentUserId);
       }catch(e){
-        currentRole        = savedRole;
-        currentPermissions = savedPerms || "";
-        currentUser        = savedUser;
-        currentUserId      = parseInt(savedUid) || null;
+        token="";
+        localStorage.removeItem("jj_token");
+        localStorage.removeItem("jj_role");
+        localStorage.removeItem("jj_user");
+        localStorage.removeItem("jj_uid");
+        localStorage.removeItem("jj_email");
+        localStorage.removeItem("jj_permissions");
+        hide();
+        document.getElementById("loginPage").classList.remove("hidden");
+        return;
       }
 
       try{ await loadAllUsers(); }catch(e){ console.log("Users load failed:", e); }
