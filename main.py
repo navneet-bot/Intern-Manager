@@ -1017,10 +1017,76 @@ def _send_resend(api_key: str, from_email: str, to_email: str, subject: str, htm
     except urllib.error.HTTPError as e:
         raise Exception(f"Resend error {e.code}: {e.read().decode()}")
 
+def _send_sendgrid(api_key: str, from_email: str, to_email: str, subject: str, html_body: str):
+    """Send via SendGrid HTTP API — works on Railway (port 443)."""
+    payload = json.dumps({
+        "personalizations": [{"to": [{"email": to_email}]}],
+        "from": {"email": from_email, "name": "Job Jockey"},
+        "subject": subject,
+        "content": [{"type": "text/html", "value": html_body}]
+    }).encode()
+    req = urllib.request.Request(
+        "https://api.sendgrid.com/v3/mail/send",
+        data=payload,
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        method="POST"
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15) as r:
+            return {"status": r.status}
+    except urllib.error.HTTPError as e:
+        raise Exception(f"SendGrid error {e.code}: {e.read().decode()}")
+
+def _send_gmail_api(to_email: str, subject: str, html_body: str):
+    """Send via Gmail REST API over HTTPS — bypasses SMTP port blocks on Railway."""
+    import base64 as _b64
+    client_id     = os.getenv("GMAIL_CLIENT_ID", "")
+    client_secret = os.getenv("GMAIL_CLIENT_SECRET", "")
+    refresh_token = os.getenv("GMAIL_REFRESH_TOKEN", "")
+    from_email    = os.getenv("JJ_EMAIL", _DEFAULT_SMTP_EMAIL)
+    if not all([client_id, client_secret, refresh_token]):
+        raise Exception("Gmail API env vars not set (GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN)")
+    # Exchange refresh_token → access_token
+    token_data = urllib.parse.urlencode({
+        "client_id": client_id, "client_secret": client_secret,
+        "refresh_token": refresh_token, "grant_type": "refresh_token"
+    }).encode()
+    token_req = urllib.request.Request(
+        "https://oauth2.googleapis.com/token", data=token_data,
+        headers={"Content-Type": "application/x-www-form-urlencoded"}, method="POST"
+    )
+    with urllib.request.urlopen(token_req, timeout=15) as r:
+        access_token = json.loads(r.read())["access_token"]
+    # Build RFC-2822 message
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"]    = f"Job Jockey <{from_email}>"
+    msg["To"]      = to_email
+    msg.attach(MIMEText(html_body, "html"))
+    raw = _b64.urlsafe_b64encode(msg.as_bytes()).decode().rstrip("=")
+    # POST to Gmail API
+    payload = json.dumps({"raw": raw}).encode()
+    send_req = urllib.request.Request(
+        "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+        data=payload,
+        headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
+        method="POST"
+    )
+    try:
+        with urllib.request.urlopen(send_req, timeout=15) as r:
+            return json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        raise Exception(f"Gmail API {e.code}: {e.read().decode()}")
+
 def _dispatch_email(resend_key: str, smtp_email: str, smtp_pass: str,
                     to_email: str, subject: str, html_body: str):
-    """Use Resend if key present, otherwise try SMTP."""
-    if resend_key:
+    """Priority: SendGrid → Gmail API → Resend → SMTP (local dev fallback)."""
+    sg_key = os.getenv("SENDGRID_API_KEY", "")
+    if sg_key:
+        _send_sendgrid(sg_key, _DEFAULT_FROM_EMAIL, to_email, subject, html_body)
+    elif os.getenv("GMAIL_REFRESH_TOKEN"):
+        _send_gmail_api(to_email, subject, html_body)
+    elif resend_key:
         _send_resend(resend_key, _DEFAULT_FROM_EMAIL, to_email, subject, html_body)
     else:
         _send_smtp(smtp_email, smtp_pass, to_email, subject, html_body)
