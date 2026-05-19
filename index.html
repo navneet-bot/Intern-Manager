@@ -1451,33 +1451,53 @@ function toggleSyncPanel(){
 // ── CSV / EXCEL FILE UPLOAD ───────────────────────────
 let csvRows=[], csvHeaders=[], csvFieldMap={};
 
-// All candidate fields with keyword matchers
+// All candidate fields with keyword matchers (longer = more specific = tried first)
 const CSV_FIELDS=[
   {key:"name",       label:"Name",        required:true,  icon:"👤", kw:["full name","student name","candidate name","applicant name","intern name","your name","name"]},
-  {key:"email",      label:"Email",       required:true,  icon:"📧", kw:["email id","email address","e-mail address","your email","email"]},
-  {key:"phone",      label:"Phone",       required:false, icon:"📱", kw:["phone number","mobile number","contact number","phone no","mobile no","whatsapp","phone","mobile","contact"]},
-  {key:"skill",      label:"Skills/Role", required:false, icon:"💼", kw:["applying for","internship role","job profile","tech stack","technology","skill","role","position","profile"]},
-  {key:"college",    label:"College",     required:false, icon:"🏫", kw:["college name","university name","institution name","college","university","institution","institute","campus"]},
-  {key:"state",      label:"State",       required:false, icon:"📍", kw:["which state","your state","home state","state","hometown","district","city","location","place"]},
-  {key:"edu_domain", label:"Branch",      required:false, icon:"🎓", kw:["branch","department","course","degree","specialization","domain","stream","field of study","program","study"]},
-  {key:"duration",   label:"Duration",    required:false, icon:"📅", kw:["internship duration","duration","period","how long","availability","months","weeks","tenure"]},
-  {key:"resume_link",label:"Resume Link", required:false, icon:"📄", kw:["resume link","google drive","gdrive","drive link","cv link","portfolio","resume","attachment","cv","document"]},
+  {key:"email",      label:"Email",       required:true,  icon:"📧", kw:["email id","e-mail id","email address","e-mail address","your email","email"]},
+  {key:"phone",      label:"Phone",       required:false, icon:"📱", kw:["phone number","mobile number","contact number","phone no","mobile no","whatsapp number","phone","mobile","contact","whatsapp"]},
+  {key:"skill",      label:"Skills/Role", required:false, icon:"💼", kw:["applying for","internship role","job profile","tech stack","technology","skill","role","position","profile","apply"]},
+  {key:"college",    label:"College",     required:false, icon:"🏫", kw:["college name","university name","institution name","college","university","institution","institute","campus","school"]},
+  {key:"state",      label:"State",       required:false, icon:"📍", kw:["which state","your state","home state","current state","state","hometown","district"]},
+  {key:"edu_domain", label:"Branch",      required:false, icon:"🎓", kw:["branch name","field of study","area of study","branch","department","specialization","domain","stream","course","degree","program","study"]},
+  {key:"duration",   label:"Duration",    required:false, icon:"📅", kw:["internship duration","duration of internship","duration","period","how long","availability","months","weeks","tenure"]},
+  {key:"resume_link",label:"Resume Link", required:false, icon:"📄", kw:["resume link","cv link","drive link","google drive link","portfolio link","linkedin","resume","portfolio","cv","gdrive"]},
 ];
+
+// Columns that should never be auto-mapped (Google Forms auto-fields)
+const _SKIP_RE=/^(timestamp|start time|completion time|sl\.?\s*no\.?|serial|s\.?\s*no\.?|index|#)$/i;
+
+function _cleanHeader(h){
+  return h.toLowerCase().replace(/^\d+[.)]\s*/,"").replace(/\s+/g," ").trim();
+}
 
 function _autoMapFields(headers){
   const map={}, used=new Set();
+
+  // Auto-skip system columns (Timestamp etc.)
+  headers.forEach((h,i)=>{ if(_SKIP_RE.test(h.trim())) used.add(i); });
+
+  // IMPORTANT: try numbered headers first (Google Form questions like "2. Email")
+  // then plain headers (auto-fill like "Email Address")
+  const numbered=[], plain=[];
+  headers.forEach((h,i)=>{
+    if(used.has(i)) return;
+    (/^\d+[.)]\s/.test(h.trim()) ? numbered : plain).push({h,i});
+  });
+  const priority=[...numbered,...plain];
+
   for(const field of CSV_FIELDS){
-    // Try longer/more specific keywords first for better accuracy
-    const sorted=[...field.kw].sort((a,b)=>b.length-a.length);
-    for(const kw of sorted){
-      for(let i=0;i<headers.length;i++){
+    const sortedKw=[...field.kw].sort((a,b)=>b.length-a.length);
+    let found=false;
+    for(const kw of sortedKw){
+      for(const {h,i} of priority){
         if(used.has(i)) continue;
-        const hl=headers[i].toLowerCase().replace(/^\d+\.\s*/,"").trim(); // strip "1. " prefix
-        if(hl.includes(kw)||kw===hl){
-          map[field.key]=i; used.add(i); break;
+        const hl=_cleanHeader(h);
+        if(hl===kw||hl.includes(kw)){
+          map[field.key]=i; used.add(i); found=true; break;
         }
       }
-      if(map[field.key]!==undefined) break;
+      if(found) break;
     }
   }
   return map;
@@ -1530,19 +1550,26 @@ function _buildImportPreview(rows, mapping, headers){
 }
 
 function _buildMappingDropdowns(headers, autoMap){
+  const first=csvRows[0]||[];
   const sel=(key,req)=>{
     const cur=autoMap[key];
-    const opts=headers.map((h,i)=>`<option value="${i}"${cur===i?" selected":""}>${i+1}. ${h}</option>`).join("");
-    return `<select data-field="${key}" onchange="csvRefreshPreview()" style="flex:1;min-width:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);font-size:12px">
-      ${req?"":`<option value=""${cur===undefined?" selected":""}>— Skip —</option>`}
-      ${opts}
+    const skip=req?"":`<option value=""${cur===undefined?" selected":""}>— Skip this field —</option>`;
+    const opts=headers.map((h,i)=>{
+      const hint=String(first[i]||"").trim().slice(0,22);
+      const label=`${h}${hint?" → "+hint:""}`;
+      return `<option value="${i}"${cur===i?" selected":""}>${label}</option>`;
+    }).join("");
+    return `<select data-field="${key}" onchange="csvRefreshPreview()"
+      style="flex:1;min-width:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);font-size:12px;max-width:320px">
+      ${skip}${opts}
     </select>`;
   };
   return CSV_FIELDS.map(f=>{
     const found=autoMap[f.key]!==undefined;
     const dot=found?(f.required?"🟢":"🟡"):"⚪";
-    return `<div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:12px;white-space:nowrap">${dot} ${f.icon} <strong style="color:var(--text-soft)">${f.label}</strong>${f.required?` <span style="color:var(--red);font-size:10px">*</span>`:""}</span>
+    const label=`${dot} ${f.icon} <strong style="color:var(--text-soft);min-width:80px;display:inline-block">${f.label}</strong>${f.required?` <span style="color:var(--red);font-size:10px">*</span>`:""}`;
+    return `<div style="display:flex;align-items:center;gap:8px;padding:2px 0">
+      <span style="font-size:12px;white-space:nowrap;min-width:130px">${label}</span>
       ${sel(f.key,f.required)}
     </div>`;
   }).join("");
