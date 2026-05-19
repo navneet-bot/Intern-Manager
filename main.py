@@ -957,7 +957,7 @@ def change_password(data: dict, db: Session = Depends(get_db), user=Depends(get_
 # ════════════════════════════════════════════════
 _DEFAULT_SMTP_EMAIL = "Navneet066@jobjockey.in"
 _DEFAULT_SMTP_PASS  = "lmykilowmhbydyfx"
-_DEFAULT_FROM_EMAIL = "noreply@jobjockey.in"
+_DEFAULT_FROM_EMAIL = "Navneet066@jobjockey.in"  # must match verified sender in SendGrid
 
 def _get_email_config(db):
     """Return (resend_key, smtp_email, smtp_pass) — Resend preferred over SMTP."""
